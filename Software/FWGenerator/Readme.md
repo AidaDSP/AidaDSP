@@ -1,1 +1,0 @@
-Pippo pluto paperino
