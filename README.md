@@ -8,3 +8,6 @@ integrate the control of this DSP in the Arduino enviroment.
 You can do things like remote EQ (just use our library and your favourite bluetooth module, and you're done)
 or more complex, with algorithms spanning from pro audio multiband compressors to beam forming techniques.
 Audio ethusiasts, this board is for you!!!
+
+2015 Aida Team
+www.aidadsp.com
