@@ -13,3 +13,6 @@ to use with sketches given with AIDA DSP board
 - Motown 		a 7 band parametric equalizer with fixed musical frequencies
 - TS9 			the replica of the evergreen stomp box for guitar  
 - Tremolo 		an algorithm inspired by Strymon http://www.strymon.net/2012/04/12/amplifier-tremolo-technology-white-paper/
+
+AidaDSP Team 2015
+www.aidadsp.com
