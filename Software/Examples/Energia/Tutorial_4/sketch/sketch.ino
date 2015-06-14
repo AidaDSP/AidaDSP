@@ -96,7 +96,7 @@ void setup()
   delay(100);  // Start-up delay for DSP
   program_download();    // Here we load program, parameters and hardware configuration to DSP
   spettacolino();
-  MasterVolume(DEVICE_ADDR_7bit, Single1, 0.00);    // With DAC in mute, set volume to 0
+  MasterVolumeStereo(DEVICE_ADDR_7bit, Single1, 0.00);    // With DAC in mute, set volume to 0
   delay(1);   
   AIDA_WRITE_REGISTER_BLOCK(DEVICE_ADDR_7bit, CoreRegisterR4Addr, CoreRegisterR4Size, CoreRegisterR4Data);    // Mute DAC Off
 }
@@ -165,16 +165,16 @@ void loop()
         Serial.println("dB");
 
         volume = pow(10, volume/20);    // From dB to linear conversion --> DSP takes only linear values in 5.28 fixed point format!!!
-        MasterVolume(DEVICE_ADDR_7bit, Single1, volume);
+        MasterVolumeStereo(DEVICE_ADDR_7bit, Single1, volume);
       }
       else
       {
-        MasterVolume(DEVICE_ADDR_7bit, Single1, volume);
+        MasterVolumeStereo(DEVICE_ADDR_7bit, Single1, volume);
       }			
     }
     else if(mute == ON)
     {
-      MasterVolume(DEVICE_ADDR_7bit, Single1, 0.00);
+      MasterVolumeStereo(DEVICE_ADDR_7bit, Single1, 0.00);
       Serial.println("mute on");
     }
     if(submenu==ON)
