@@ -25,7 +25,8 @@
 
 #define N_ENC 24*4 // We manage the quadrature encoder with x4 resolution so 24*4 every turn.
 #define MAX_PULSES_ROUGH  N_ENC*1
-#define MAX_PULSES_FINE  N_ENC*10
+//#define MAX_PULSES_FINE  N_ENC*10
+#define MAX_PULSES_FINE  N_ENC*25
 
 // PRIVATE VARIABLES
 // ENCODER
@@ -57,6 +58,8 @@ uint8_t get_regulation_precision(void)
 // This function manage the value of the encoder for user control of Sigma DSP parameters
 float processencoder(float minval, float maxval, int32_t pulses)
 {
+  float val = 0.00;
+  
   if(minval < 0)
   {
     if(pulses >= 0)
@@ -64,11 +67,21 @@ float processencoder(float minval, float maxval, int32_t pulses)
       if(pulses == 0) 
         return 0.00;
       else
-        return pulses*(maxval/max_number_of_pulses); 
+	  {
+        val = pulses*(maxval/max_number_of_pulses);
+		if(val > maxval)
+		  return maxval;
+		else
+		  return val; 
+	  }
     }
     else // pulses < 0
     {
-      return abs(pulses)*(minval/max_number_of_pulses);
+      val = abs(pulses)*(minval/max_number_of_pulses);
+	  if(val < minval)
+		return minval;
+	  else
+		return val;
     } 
   }
   else // minval >= 0
@@ -79,7 +92,11 @@ float processencoder(float minval, float maxval, int32_t pulses)
         return minval;
       else // pulses > 0
       {
-        return (pulses*((maxval-minval)/max_number_of_pulses))+minval;
+        val = (pulses*((maxval-minval)/max_number_of_pulses))+minval;
+		if(val > maxval)
+		  return maxval;
+		else
+		  return val;
       }
     }
   }
@@ -194,8 +211,13 @@ void setPulses(int32_t value)
 	Pulses = value;
 }
 
+void gainCell(int dspAddress, int address, float value)
+{
+	AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, false, value);
+}
+
 /*
-This function manage a stereo volume control 
+This function manage a mono volume control 
  */
 void MasterVolumeMono(int dspAddress, int address, float value)
 {
@@ -207,8 +229,8 @@ This function manage a stereo volume control
  */
 void MasterVolumeStereo(int dspAddress, int address, float value)
 {
-  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, false, value);
-  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address+1, true, value);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, value);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, value);
 }
 
 /*
@@ -728,11 +750,12 @@ void soft_clip(int dspAddress, int address, float alpha)
   AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, true, twothird);
 }
 
-void dc_source(int dspAddress, int address, uint8_t percent)
+//void dc_source(int dspAddress, int address, uint8_t percent)
+void dc_source(int dspAddress, int address, float value)
 {
-  float value = 0.00;
+  //float value = 0.00;
   
-  value=((float)percent/100.00)*1.0;
+  //value=((float)percent/100.00)*1.0;
 
   AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, value);
 }

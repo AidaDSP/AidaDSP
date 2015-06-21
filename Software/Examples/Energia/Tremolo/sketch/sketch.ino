@@ -39,10 +39,12 @@
 #define EVER (;;)
 
 // DEFINES USER INTERFACE
-#define VOLMAX 6.00
+#define VOLMAX 15.00
 #define VOLMIN -80.00
 #define FREQMIN 0.1f // Hz
-#define FREQMAX 10.0f // Hz
+#define FREQMAX 35.0f // Hz
+#define COLORMIN -15.00f // dB
+#define COLORMAX 15.00f // dB
 
 #define ON 1
 #define OFF 0
@@ -56,6 +58,10 @@
 void spettacolino();
 void clearAndHome(void);
 void mix(uint8_t percent);
+void setMode(void);
+void setFrequency(void);
+void setLfo(void);
+void depth(void);
 
 // GLOBAL VARIABLES
 // ENCODER
@@ -64,17 +70,28 @@ int32_t OldPulses = 0;
 // UI
 uint8_t count = 0;
 uint8_t function = 0;
-uint8_t mute = OFF;
-uint8_t submenu = OFF;
-uint8_t preset = 0;
-uint8_t oldpreset = 0;
-uint8_t restore = OFF;
-uint8_t restoreflag = false;
-uint16_t PotValue = 0;
+uint8_t bypass = OFF;
+uint8_t oldbypass = OFF;
+uint8_t func_counter = 0;
+uint8_t old_func_counter = 0;
+uint8_t mode = 1;
+uint8_t lfotype = 1;
+uint8_t restore = 1;
+uint8_t mixvalue = 0;
+int32_t freqpulses = 198;
+int32_t lfotypepulses = 0;
+int32_t modepulses = 0;
+int32_t colorpulses = 0;
+int32_t volumepulses = 0;
+int32_t mixpulses = 0;
+int32_t depthpulses = 0;
 uint32_t time=0, prevtime=0;
 
+float volumedB = 0.00;
 float volume = 0.00;
 float frequency = 0.00;
+float colorvalue = 0.00;
+float depthvalue = 0.00;
 equalizer_t color;
 
 void setup()
@@ -98,49 +115,9 @@ void setup()
   delay(100);  // Start-up delay for DSP
   program_download();    // Here we load program, parameters and hardware configuration to DSP
   spettacolino();
-  MasterVolumeMono(DEVICE_ADDR_7bit, MasterVol, 0.00);    // With DAC in mute, set volume to 0
+  MasterVolumeMono(DEVICE_ADDR_7bit, MasterVol, 1.00);    // With DAC in mute, set volume to 0dB
   delay(1);   
   AIDA_WRITE_REGISTER_BLOCK(DEVICE_ADDR_7bit, CoreRegisterR4Addr, CoreRegisterR4Size, CoreRegisterR4Data);    // Mute DAC Off
-  delay(1);
-  // Depth
-  AIDA_SAFELOAD_WRITE_VALUE(DEVICE_ADDR_7bit, Depth, true, pow(10, -9.0/20.00));	 // Depth is a combination of offset and volume
-  delay(1);
-  // DepthBias
-  dc_source(DEVICE_ADDR_7bit, DepthBias, 0.5);
-  delay(1);
-  // RefBias
-  dc_source(DEVICE_ADDR_7bit, RefBias, 0.5);
-  // Mix
-  mix(25);
-  delay(1);
-  // State Variable Filter
-  StateVariable(DEVICE_ADDR_7bit, StateVarFilter1, 700.0, 0.71);
-  delay(1);
-  // Color
-  color.S = 0.70;
-  color.f0 = 1200.00;
-  color.boost = 6.00;
-  color.type = HighShelf;
-  EQ2ndOrd(DEVICE_ADDR_7bit, Color, &color);
-  delay(1);
-  // Master Vol
-  MasterVolumeMono(DEVICE_ADDR_7bit, MasterVol, pow(10, 0.00/20.00));
-  delay(1);
-  // Mode
-  mux(DEVICE_ADDR_7bit, ModeSelector, 1, 2); // Harmonic
-  delay(1);
-  // Bypass
-  mux(DEVICE_ADDR_7bit, BypassSelector, 2, 2); // Bypass 
-  delay(1);
-  // LFO Source
-  mux(DEVICE_ADDR_7bit, LfoSelector, 1, 4); // Triangular
-  delay(1);
-  // Gain
-  MasterVolumeMono(DEVICE_ADDR_7bit, Gain, 2.5);
-  delay(1);
-  // Pre Gain
-  MasterVolumeMono(DEVICE_ADDR_7bit, PreGain, 2.5);
-  delay(1);
 }
 
 void loop()
@@ -170,11 +147,13 @@ void loop()
 
   if(function==1)
   {
-    mute ^= 1;
+    func_counter++;
+    if(func_counter==7)
+      func_counter=0;
   }
   else if(function==2)
   {
-    submenu ^=1; 
+    bypass ^=1; 
   }
 
   time = millis();
@@ -185,210 +164,178 @@ void loop()
     Serial.println("*    User control interface    *");
     Serial.println("*    AIDA Tremolo Sketch       *");
     Serial.println("********************************");
-    Serial.println("Press button rapidly to switch mute on/off,");
-    Serial.println("press button for 1 sec to enter submenu.");
     Serial.write('\n');
-
     Serial.print("Encoder pulses: ");
     Serial.println(getPulses(), DEC);
-    if(mute == OFF)
+    Serial.write('\n');
+    
+    if(oldbypass != bypass)
     {
-      if(submenu == OFF)
+      if(bypass == ON)
       {
-        if(restoreflag == true)
-        {
-          restoreflag = false;
-          setPulses(OldPulses);
-        }
-        //volume = processencoder(VOLMIN, VOLMAX, getPulses());
-        frequency = processencoder(FREQMIN, FREQMAX, getPulses());
-
-        //Serial.print("Master Vol. ");
-        //Serial.print(volume, 1);
-        //Serial.println("dB");
-        
-        Serial.print("Freq. ");
-        Serial.print(frequency, 1);
-        Serial.println("Hz");
-
-        switch(preset)
-        {
-          case 1:  
-            break;
-          case 2:
-            triangle_source(DEVICE_ADDR_7bit, Triangle1, frequency);
-            break;
-          case 3:
-            triangle_source(DEVICE_ADDR_7bit, Triangle1, frequency);
-            break;
-          case 4:
-            sine_source(DEVICE_ADDR_7bit, Triangle1, frequency);
-            break;
-          case 5:
-            sawtooth_source(DEVICE_ADDR_7bit, Triangle1, frequency);
-            break;
-          case 6:
-            square_source(DEVICE_ADDR_7bit, Triangle1, frequency);
-            break;
-          case 7:
-            
-            break;
-          case 8:
-            
-            break;
-        }
-
-        //volume = pow(10, volume/20);    // From dB to linear conversion --> DSP takes only linear values in 5.28 fixed point format!!!
-        //MasterVolumeMono(DEVICE_ADDR_7bit, MasterVol, volume);
+        mux(DEVICE_ADDR_7bit, BypassSelector, 2, 2); // Bypass 
       }
       else
       {
-        //MasterVolumeMono(DEVICE_ADDR_7bit, MasterVol, volume);
-      }			
-    }
-    else if(mute == ON)
-    {
-      //MasterVolumeMono(DEVICE_ADDR_7bit, MasterVol, 0.00);
-      Serial.println("mute on");
-    }
-    if(submenu==ON)
-    {
-      if(restoreflag == false)
-      {
-        restoreflag = true;
-        OldPulses = getPulses();  // Save actual Pulses for restoring when exit menu
-        setPulses(16);  // Restart from a known position
+        mux(DEVICE_ADDR_7bit, BypassSelector, 1, 2); // Fx
       }
-      preset = (uint8_t)selectorwithencoder(getPulses(), 3);  // Use the encoder as a selector, 3 bit
-
-      // Muxes produces noises so switch them only one time (when changed)
-      if(oldpreset != preset)
-      {
-        switch(preset)
-        {
-        case 1:
-          // Bypass
-          mux(DEVICE_ADDR_7bit, BypassSelector, 2, 2);
-          delay(1);
-          break;
-        case 2:
-          // Triangle
-          // Color
-          color.S = 0.70;
-          color.f0 = 1200.00;
-          color.boost = 0.00;
-          color.type = HighShelf;
-          EQ2ndOrd(DEVICE_ADDR_7bit, Color, &color);
-          mux(DEVICE_ADDR_7bit, BypassSelector, 1, 2); 
-          delay(1);
-          mux(DEVICE_ADDR_7bit, LfoSelector, 1, 4);
-          delay(1);
-          //triangle_source(DEVICE_ADDR_7bit, Triangle1, 1.7);
-          delay(1);
-          break;
-        case 3:
-          // Triangle
-          // Color
-          color.S = 0.70;
-          color.f0 = 1200.00;
-          color.boost = 12.00;
-          color.type = HighShelf;
-          EQ2ndOrd(DEVICE_ADDR_7bit, Color, &color);
-          mux(DEVICE_ADDR_7bit, BypassSelector, 1, 2); 
-          delay(1);
-          mux(DEVICE_ADDR_7bit, LfoSelector, 1, 4);
-          delay(1);
-          //triangle_source(DEVICE_ADDR_7bit, Triangle1, 1.7);
-          delay(1);
-          break;
-        case 4:
-          // Sine
-          // Color
-          color.S = 0.70;
-          color.f0 = 1200.00;
-          color.boost = 20.00;
-          color.type = HighShelf;
-          EQ2ndOrd(DEVICE_ADDR_7bit, Color, &color);
-          delay(1);
-          mux(DEVICE_ADDR_7bit, BypassSelector, 1, 2); 
-          delay(1);
-          mux(DEVICE_ADDR_7bit, LfoSelector, 2, 4);
-          delay(1);
-          //sine_source(DEVICE_ADDR_7bit, Tone1, 1.7);
-          delay(1);
-          break;
-        case 5:
-          // Sawtooth
-          mux(DEVICE_ADDR_7bit, BypassSelector, 1, 2); 
-          delay(1);
-          mux(DEVICE_ADDR_7bit, LfoSelector, 3, 4);
-          delay(1);
-          //sawtooth_source(DEVICE_ADDR_7bit, Sawtooth1, 1.7);
-          delay(1);
-          break;
-        case 6:
-          // Square
-          mux(DEVICE_ADDR_7bit, BypassSelector, 1, 2); 
-          delay(1);
-          mux(DEVICE_ADDR_7bit, LfoSelector, 4, 4);
-          delay(1);
-          //square_source(DEVICE_ADDR_7bit, Square1, 1.7);
-          delay(1);
-          break;
-        case 7:
-          
-          break;
-        case 8:
-          
-          break;
-        }
-        oldpreset = preset;
-      }
-      
-      // Print only submenu messages
-      switch(preset)
-      {
-        case 1:
-          Serial.println(" Bypass");
-          break;
-        case 2:
-          Serial.println(" LFO Triangle Harm Scuro...");
-          break;
-        case 3:
-          Serial.println(" LFO Triangle Harm Chiaro...");
-          break;
-        case 4:
-          Serial.println(" LFO Sine Harm...");
-          break;
-        case 5:
-          Serial.println(" LFO Sawtooth Harm...");
-          break;
-        case 6:
-          Serial.println(" LFO Square Harm...");
-          break;
-        case 7:
-          Serial.println(" Nothing...");
-          break;
-        case 8:
-          Serial.println(" Nothing...");
-          break;
-      }
-      
-
-      Serial.write('\n');
-      Serial.print("    Selected preset: ");
-      Serial.println(preset, DEC);
-
+      oldbypass = bypass;
     }
-    else if(submenu==OFF)
+
+    if(old_func_counter != func_counter)
     {
-      Serial.write('\n');
-      Serial.println("    Submenu OFF");
+      restore = 1;
+      old_func_counter = func_counter;
     }
+    switch(func_counter)
+    {
+    case 0: // Frequency
+    
+      if(restore)
+      {
+        restore = 0;
+        setPulses(freqpulses);
+      }
+      set_regulation_precision(ON); // Fine regulation
+      freqpulses = getPulses();
+      frequency = processencoder(FREQMIN, FREQMAX, freqpulses);
+      setFrequency();
+      break;
+    case 1: // LFO type
+      if(restore)
+      {
+        restore = 0;
+        setPulses(lfotypepulses);
+      }
+      lfotypepulses = getPulses();
+      lfotype = selectorwithencoder(lfotypepulses, 2); 
+      setLfo();
+      break;
+    case 2: // Mode
+      if(restore)
+      {
+        restore = 0;
+        setPulses(modepulses);
+      }
+      modepulses = getPulses();
+      mode = selectorwithencoder(modepulses, 2); 
+      setMode();
+      break;
+    case 3: // Color
+      if(restore)
+      {
+        restore = 0;
+        setPulses(colorpulses);
+      }
+      set_regulation_precision(OFF); // Rough regulation
+      colorpulses = getPulses();
+      colorvalue = processencoder(COLORMIN, COLORMAX, colorpulses);
+      color.S = 0.70;
+      color.f0 = 1200.00;
+      color.boost = colorvalue;
+      color.type = HighShelf;
+      EQ2ndOrd(DEVICE_ADDR_7bit, Color, &color);
+      break;
+    case 4: // Volume
+      if(restore)
+      {
+        restore = 0;
+        setPulses(volumepulses);
+      }
+      set_regulation_precision(OFF); // Rough regulation
+      volumepulses = getPulses();
+      volumedB = processencoder(VOLMIN, VOLMAX, volumepulses);
+      volume = pow(10, volumedB/20);    // From dB to linear conversion --> DSP takes only linear values in 5.28 fixed point format!!!
+      MasterVolumeMono(DEVICE_ADDR_7bit, MasterVol, volume);
+      break;  
+    case 5: // Mix
+      if(restore)
+      {
+        restore = 0;
+        setPulses(mixpulses);
+      }
+      set_regulation_precision(OFF); // Rough regulation
+      mixpulses = getPulses();
+      mixvalue = (uint8_t)processencoder(0, 100, mixpulses);
+      mix(mixvalue);
+      break;
+    case 6: // Depth
+      if(restore)
+      {
+        restore = 0;
+        setPulses(depthpulses);
+      } 
+      set_regulation_precision(ON); // Fine regulation
+      depthpulses = getPulses();
+      depthvalue = processencoder(0, 1.0, depthpulses);
+      depth(); 
+      break;    
+    } // End switch func_counter
+
+
+    // Print menu
+    Serial.print("Effect status: ");
+    if(bypass)
+      Serial.println("bypass");
+    else
+      Serial.println("on");
+    Serial.write('\n');  
+    if(func_counter==0)
+      Serial.print("    ");
+    Serial.print("Freq. ");
+    Serial.print(frequency, 1);
+    Serial.println(" Hz");
+    if(func_counter==1)
+      Serial.print("    ");
+    Serial.print("Lfo type: ");
+    if(lfotype==1)
+      Serial.println("triangular");
+    if(lfotype==2)
+      Serial.println("sine");
+    if(lfotype==3)
+      Serial.println("sawtooth");
+    if(lfotype==4)
+      Serial.println("square");
+    //Serial.println(lfotype, DEC);
+    if(func_counter==2)
+      Serial.print("    ");
+    Serial.print("Mode: ");
+    if(mode==1)
+      Serial.println("normal");
+    if(mode==2)
+      Serial.println("harmonic");
+    if(mode==3)
+      Serial.println("opto");
+    if(mode==4)
+      Serial.println("opto + harmonic");
+    //Serial.println(mode, DEC);
+    if(func_counter==3)
+      Serial.print("    ");
+    Serial.print("Color: ");
+    Serial.print(colorvalue, 1);
+    Serial.println(" dB");
+    if(func_counter==4)
+      Serial.print("    ");
+    Serial.print("Volume: ");
+    Serial.print(volumedB, 1);
+    Serial.println(" dB");
+    if(func_counter==5)
+      Serial.print("    ");
+    Serial.print("Mix: ");
+    Serial.print(mixvalue, DEC);
+    Serial.println(" %");
+    if(func_counter==6)
+      Serial.print("    ");
+    Serial.print("Depth: ");
+    Serial.println(depthvalue, 2);
+    
+    Serial.write('\n');
+    Serial.print("Active item: ");
+    Serial.println(func_counter, DEC);
+
 
     prevtime = time;
-  } 
-
+  } // End if 1000ms tick
 } // End void loop
 
 void spettacolino()
@@ -426,11 +373,94 @@ void clearAndHome(void)
 void mix(uint8_t percent)
 {
   float value = percent/100.00;
-  
+
   // MIX
   AIDA_SAFELOAD_WRITE_VALUE(DEVICE_ADDR_7bit, Mix, false, value);  // Dry	 
   AIDA_SAFELOAD_WRITE_VALUE(DEVICE_ADDR_7bit, Mix+1, true, 1.00-value);   // Wet
 }
+
+void setFrequency(void)
+{
+  triangle_source(DEVICE_ADDR_7bit, Triangle1, frequency*2.00);
+  delay(1);
+  sine_source(DEVICE_ADDR_7bit, Tone1, frequency);
+  delay(1);
+  sawtooth_source(DEVICE_ADDR_7bit, Sawtooth1, frequency);
+  delay(1);
+  square_source(DEVICE_ADDR_7bit, Square1, frequency);
+  delay(1);
+  /* 
+  switch(lfotype)
+  {
+  case 1:  
+    triangle_source(DEVICE_ADDR_7bit, Triangle1, frequency);
+    break;
+  case 2:
+    sine_source(DEVICE_ADDR_7bit, Triangle1, frequency);
+    break;
+  case 3:
+    sawtooth_source(DEVICE_ADDR_7bit, Triangle1, frequency);
+    break;
+  case 4:
+    square_source(DEVICE_ADDR_7bit, Triangle1, frequency);
+    break;
+  }
+  */
+}
+
+void setLfo(void)
+{
+  static uint8_t lfotypeold = 0.00;
+  
+  if(lfotypeold != lfotype)
+  {
+    mux(DEVICE_ADDR_7bit, LfoSelector, lfotype, 4);
+    lfotypeold = lfotype;
+  }
+}
+
+void setMode(void)
+{
+  static uint8_t oldmode = 0.00;
+  
+  if(oldmode != mode)
+  {
+    switch(mode)
+    {
+    case 1:  
+      mux(DEVICE_ADDR_7bit, Harmonic, 2, 2); // NO Harmonic
+      mux(DEVICE_ADDR_7bit, Opto, 2, 2); // NO Opto
+      break;
+    case 2:
+      mux(DEVICE_ADDR_7bit, Harmonic, 1, 2); // SI Harmonic
+      mux(DEVICE_ADDR_7bit, Opto, 2, 2); // NO Opto
+      break;
+    case 3:
+      mux(DEVICE_ADDR_7bit, Harmonic, 2, 2); // NO Harmonic
+      mux(DEVICE_ADDR_7bit, Opto, 1, 2); // SI Opto
+      break;
+    case 4:
+      mux(DEVICE_ADDR_7bit, Harmonic, 1, 2); // SI Harmonic
+      mux(DEVICE_ADDR_7bit, Opto, 1, 2); // SI Opto
+      break;
+    }
+    oldmode = mode;
+  }
+}
+
+void depth(void)
+{ 
+  static float olddepthvalue = 0.00;
+  
+  if(olddepthvalue != depthvalue)
+  {
+    dc_source(DEVICE_ADDR_7bit, Bias, depthvalue);
+    delay(1);
+    gainCell(DEVICE_ADDR_7bit, Depth, 1.0-depthvalue);
+    olddepthvalue = depthvalue;
+  }
+}
+
 
 
 

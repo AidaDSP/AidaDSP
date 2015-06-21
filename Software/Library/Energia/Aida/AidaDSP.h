@@ -132,6 +132,7 @@ int32_t getPulses(void);
 void setPulses(int32_t value);
 
 // DSP Blocks
+void gainCell(int dspAddress, int address, float value);
 void MasterVolumeMono(int dspAddress, int address, float value);
 void MasterVolumeStereo(int dspAddress, int address, float value);
 void EQ1stOrd(int dspAddress, int address, equalizer_t* equalizer);
@@ -144,7 +145,8 @@ void readBack(int dspAddress, int address, int capturecount, float *value);
 void mux(int dspAddress, int address, uint8_t select, uint8_t nchannels);
 void hard_clip(int dspAddress, int address, float th_high, float th_low);
 void soft_clip(int dspAddress, int address, float alpha);
-void dc_source(int dspAddress, int address, uint8_t percent);
+//void dc_source(int dspAddress, int address, uint8_t percent);
+void dc_source(int dspAddress, int address, float value);
 void sine_source(int dspAddress, int address, float frequency);
 void sawtooth_source(int dspAddress, int address, float frequency);
 void square_source(int dspAddress, int address, float frequency);
