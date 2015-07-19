@@ -43,6 +43,8 @@
 #define VOLMIN -80.00
 #define FREQMIN 0.1f // Hz
 #define FREQMAX 35.0f // Hz
+//#define FREQMIN 1000.0f // Hz
+//#define FREQMAX 10000.0f // Hz
 #define COLORMIN -15.00f // dB
 #define COLORMAX 15.00f // dB
 
@@ -78,6 +80,7 @@ uint8_t mode = 1;
 uint8_t lfotype = 1;
 uint8_t restore = 1;
 uint8_t mixvalue = 0;
+uint16_t readbackcount = 0;
 int32_t freqpulses = 198;
 int32_t lfotypepulses = 0;
 int32_t modepulses = 0;
@@ -92,6 +95,9 @@ float volume = 0.00;
 float frequency = 0.00;
 float colorvalue = 0.00;
 float depthvalue = 0.00;
+float readback = 0.00;
+float readbackmin = 0.00;
+float readbackmax = 0.00;
 equalizer_t color;
 
 void setup()
@@ -118,6 +124,12 @@ void setup()
   MasterVolumeMono(DEVICE_ADDR_7bit, MasterVol, 1.00);    // With DAC in mute, set volume to 0dB
   delay(1);   
   AIDA_WRITE_REGISTER_BLOCK(DEVICE_ADDR_7bit, CoreRegisterR4Addr, CoreRegisterR4Size, CoreRegisterR4Data);    // Mute DAC Off
+  
+  gainCell(DEVICE_ADDR_7bit, Depth, 0.5);
+  delay(1);
+  dc_source(DEVICE_ADDR_7bit, Bias, 0.5);
+  delay(1);
+  dc_source(DEVICE_ADDR_7bit, FixedBias, 0.0); 
 }
 
 void loop()
@@ -168,6 +180,20 @@ void loop()
     Serial.print("Encoder pulses: ");
     Serial.println(getPulses(), DEC);
     Serial.write('\n');
+    
+    readbackcount = (ReadBackAlg1Data[0]<<8) | (ReadBackAlg1Data[1]&0xFF);
+    readBack(DEVICE_ADDR_7bit, ReadBackAlg1, readbackcount, &readback);
+    if(readback > readbackmax)
+      readbackmax = readback;
+    if(readback < readbackmin)
+      readbackmin = readback;
+    Serial.print("Raw: ");
+    Serial.println(readback, 2);
+    Serial.print("Max: ");
+    Serial.println(readbackmax, 2);
+    Serial.print("Min: ");
+    Serial.println(readbackmin, 2);
+    Serial.println();
     
     if(oldbypass != bypass)
     {
@@ -265,9 +291,9 @@ void loop()
         restore = 0;
         setPulses(depthpulses);
       } 
-      set_regulation_precision(ON); // Fine regulation
+      set_regulation_precision(OFF); // Rough regulation
       depthpulses = getPulses();
-      depthvalue = processencoder(0, 1.0, depthpulses);
+      depthvalue = processencoder(-1.0, 1.0, depthpulses);
       depth(); 
       break;    
     } // End switch func_counter
@@ -416,6 +442,9 @@ void setLfo(void)
   {
     mux(DEVICE_ADDR_7bit, LfoSelector, lfotype, 4);
     lfotypeold = lfotype;
+    
+    readbackmax = 0.00; // Debug !!!
+    readbackmin = 0.00; // debug !!!
   }
 }
 
@@ -456,7 +485,7 @@ void depth(void)
   {
     dc_source(DEVICE_ADDR_7bit, Bias, depthvalue);
     delay(1);
-    gainCell(DEVICE_ADDR_7bit, Depth, 1.0-depthvalue);
+    //gainCell(DEVICE_ADDR_7bit, Depth, 1.0-depthvalue);
     olddepthvalue = depthvalue;
   }
 }

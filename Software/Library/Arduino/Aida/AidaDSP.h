@@ -30,10 +30,10 @@
 #define FIXED_BITS               32
 #define FIXED_WBITS               5
 #define FIXED_FBITS              23
-#define FIXED_TO_INT(a)          ((a) >> FIXED_FBITS)
-#define FIXED_FROM_INT(a)        (int32_t)((a) << FIXED_FBITS)
-#define FLOAT_TO_FIXED(a)        (int32_t)((a*(1 << FIXED_FBITS)))
-#define FIXED_TO_FLOAT(a)        (float)((a/(1 << FIXED_FBITS)))
+#define FIXED_TO_INT(a)          ((int32_t)a >> FIXED_FBITS)
+#define FIXED_FROM_INT(a)        ((int32_t)a << FIXED_FBITS)
+#define FLOAT_TO_FIXED(a)        (a*((int32_t)1 << FIXED_FBITS))
+#define FIXED_TO_FLOAT(a)        ((float)a/((int32_t)1 << FIXED_FBITS))
 
 inline int32_t FIXED_Mul(int32_t a, int32_t b)  // This function has to be declared inline for code efficiency
 {
@@ -51,10 +51,17 @@ inline int32_t FIXED_Mul(int32_t a, int32_t b)  // This function has to be decla
 // DEFINES FOR HW CONFIGURATION
 #define SBOOT 12
 #define RESET 11
-#define ENCB 5
-#define ENCA 3
+
+#define ENCB 3
+#define ENCA 5
 #define PUSH1 2
 #define ENC_PUSH PUSH1
+
+#ifdef __AVR__ 
+#define ENC_RES_X1
+#else
+#define ENC_RES_X4
+#endif 
 
 #define POT4 A3
 #define POT3 A2
@@ -125,6 +132,7 @@ uint16_t selectorwithencoder(int32_t pulses, uint8_t bits);
 float processpot(float minval, float maxval, uint16_t potvalue);
 uint16_t selectorwithpot(uint16_t potval, uint8_t bits);
 uint8_t isinrange(uint16_t value, uint16_t reference, uint16_t threshold);
+void print_fixed_number(int32_t fixedval);
 
 // Setup
 void InitAida(void);
@@ -133,30 +141,33 @@ int32_t getPulses(void);
 void setPulses(int32_t value);
 
 // DSP Blocks
-void MasterVolume(int dspAddress, int address, float value);
-void EQ1stOrd(int dspAddress, int address, equalizer_t* equalizer);
-void EQ2ndOrd(int dspAddress, int address, equalizer_t* equalizer);
-void ToneControl(int dspAddress, int address, toneCtrl_t* toneCtrl);
-void StateVariable(int dspAddress, int address, float frequency, float q);
-void CompressorRMS(int dspAddress, int address, compressor_t* compressor);
-void CompressorPeak(int dspAddress, int address, compressor_t* compressor);   
-void readBack(int dspAddress, int address, int capturecount, float *value);
-void mux(int dspAddress, int address, uint8_t select, uint8_t nchannels);
-void hard_clip(int dspAddress, int address, float th_high, float th_low);
-void soft_clip(int dspAddress, int address, float alpha);
-void dc_source(int dspAddress, int address, uint8_t percent);
-void sine_source(int dspAddress, int address, float frequency);
-void sawtooth_source(int dspAddress, int address, float frequency);
-void square_source(int dspAddress, int address, float frequency);
-void triangle_source(int dspAddress, int address, float frequency);
+void gainCell(uint8_t dspAddress, uint16_t address, float value);
+void MasterVolumeMono(uint8_t dspAddress, uint16_t address, float value);
+void MasterVolumeStereo(uint8_t dspAddress, uint16_t address, float value);
+void EQ1stOrd(uint8_t dspAddress, uint16_t address, equalizer_t* equalizer);
+void EQ2ndOrd(uint8_t dspAddress, uint16_t address, equalizer_t* equalizer);
+void ToneControl(uint8_t dspAddress, uint16_t address, toneCtrl_t* toneCtrl);
+void StateVariable(uint8_t dspAddress, uint16_t address, float frequency, float q);
+void CompressorRMS(uint8_t dspAddress, uint16_t address, compressor_t* compressor);
+void CompressorPeak(uint8_t dspAddress, uint16_t address, compressor_t* compressor);   
+void readBack(uint8_t dspAddress, uint16_t address, uint16_t capturecount, float *value);
+void mux(uint8_t dspAddress, uint16_t address, uint8_t select, uint8_t nchannels);
+void hard_clip(uint8_t dspAddress, uint16_t address, float th_high, float th_low);
+void soft_clip(uint8_t dspAddress, uint16_t address, float alpha);
+void dc_source(uint8_t dspAddress, uint16_t address, float value);
+void sine_source(uint8_t dspAddress, uint16_t address, float frequency);
+void sawtooth_source(uint8_t dspAddress, uint16_t address, float frequency);
+void square_source(uint8_t dspAddress, uint16_t address, float frequency);
+void triangle_source(uint8_t dspAddress, uint16_t address, float frequency);
 
 // PRIVATE FUNCTIONS PROTOTYPES (DO NOT EDIT)
-void float_to_fixed(float value, uint8_t buffer[]);
-void AIDA_WRITE_REGISTER(int dspAddress, int address, int length, uint8_t *data);
-void AIDA_WRITE_REGISTER_BLOCK(int dspAddress, int address, int length, const uint8_t *data);
-void AIDA_SAFELOAD_WRITE(int dspAddress, int address, boolean Finish, float value);
-void AIDA_WRITE_REGISTER_VALUE(int dspAddress, int address, float value);
-void AIDA_READ_REGISTER(int dspAddress, int address, int length, uint8_t *data);
+void float_to_fixed(float value, uint8_t *buffer);
+void AIDA_WRITE_REGISTER(uint8_t dspAddress, uint16_t address, uint8_t length, uint8_t *data);
+void AIDA_WRITE_REGISTER_BLOCK(uint8_t dspAddress, uint16_t address, uint16_t length, const uint8_t *data);
+void AIDA_WRITE_VALUE(uint8_t dspAddress, uint16_t address, float value);
+void AIDA_SAFELOAD_WRITE_REGISTER(uint8_t dspAddress, uint16_t address, boolean finish, uint8_t *data);
+void AIDA_SAFELOAD_WRITE_VALUE(uint8_t dspAddress, uint16_t address, boolean finish, float value);
+void AIDA_READ_REGISTER(uint8_t dspAddress, uint16_t address, uint8_t length, uint8_t *data);
 
 #endif
 

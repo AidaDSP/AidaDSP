@@ -164,6 +164,31 @@ uint8_t TwoWire::requestFrom(uint8_t address, uint8_t quantity, uint8_t sendStop
 	return readed;
 }
 
+uint8_t TwoWire::requestFromReg16(uint8_t address, uint16_t reg16, uint8_t quantity, uint8_t sendStop) 
+{
+	int readed = 0;
+	
+	if (quantity > BUFFER_LENGTH)
+		quantity = BUFFER_LENGTH;
+
+	// perform blocking read into buffer
+	TWI_StartRead(twi, address, reg16, 2);
+	do {
+		// Stop condition must be set during the reception of last byte
+		if (readed + 1 == quantity)
+			TWI_SendSTOPCondition( twi);
+		TWI_WaitByteReceived(twi, RECV_TIMEOUT);
+		rxBuffer[readed++] = TWI_ReadByte(twi);
+	} while (readed < quantity);
+	TWI_WaitTransferComplete(twi, RECV_TIMEOUT);
+
+	// set rx buffer iterator vars
+	rxBufferIndex = 0;
+	rxBufferLength = readed;
+
+	return readed;
+}
+
 uint8_t TwoWire::requestFrom(uint8_t address, uint8_t quantity) {
 	return requestFrom((uint8_t) address, (uint8_t) quantity, (uint8_t) true);
 }
@@ -234,7 +259,8 @@ uint8_t TwoWire::endTransmission(uint8_t sendStop) {
 		txWriteRomQuantity=0;	// Clear to disable further tx
 	}
 	
-	if (error == 0) {
+	if (error == 0) 
+	{
 		TWI_Stop(twi);
 		if (!TWI_WaitTransferComplete(twi, XMIT_TIMEOUT))
 			error = 4;	// error, finishing up
@@ -284,7 +310,7 @@ size_t TwoWire::write(const uint8_t *data, size_t quantity) {
 	return quantity;
 }
 
-size_t TwoWire::writeBlock(uint8_t *data, size_t quantity, uint16_t internalAddress) {
+size_t TwoWire::writeBlock(const uint8_t *data, size_t quantity, uint16_t internalAddress) {
 	uint8_t MSB = 0x00, LSB = 0x00;
 	size_t i;
 	

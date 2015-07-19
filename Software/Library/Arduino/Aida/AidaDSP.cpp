@@ -19,13 +19,22 @@
  
 #include "AidaDSP.h"
 
+#ifdef __AVR__ 
+#define WIRE Wire
+#else
+#define WIRE Wire1 // Arduino2
+#endif
+#define FULLRANGEVAL 1024
+#define MIDDLEVAL (1024.00/2)
 
-#define FULLRANGEVAL 4096
-#define MIDDLEVAL (4096.00/2)
-
+#ifdef ENC_RES_X4
 #define N_ENC 24*4 // We manage the quadrature encoder with x4 resolution so 24*4 every turn.
+#else
+#define N_ENC 24
+#endif
 #define MAX_PULSES_ROUGH  N_ENC*1
-#define MAX_PULSES_FINE  N_ENC*10
+//#define MAX_PULSES_FINE  N_ENC*10
+#define MAX_PULSES_FINE  N_ENC*25
 
 // PRIVATE VARIABLES
 // ENCODER
@@ -57,6 +66,8 @@ uint8_t get_regulation_precision(void)
 // This function manage the value of the encoder for user control of Sigma DSP parameters
 float processencoder(float minval, float maxval, int32_t pulses)
 {
+  float val = 0.00;
+  
   if(minval < 0)
   {
     if(pulses >= 0)
@@ -64,11 +75,21 @@ float processencoder(float minval, float maxval, int32_t pulses)
       if(pulses == 0) 
         return 0.00;
       else
-        return pulses*(maxval/max_number_of_pulses); 
+	  {
+        val = pulses*(maxval/max_number_of_pulses);
+		if(val > maxval)
+		  return maxval;
+		else
+		  return val; 
+	  }
     }
     else // pulses < 0
     {
-      return abs(pulses)*(minval/max_number_of_pulses);
+      val = abs(pulses)*(minval/max_number_of_pulses);
+	  if(val < minval)
+		return minval;
+	  else
+		return val;
     } 
   }
   else // minval >= 0
@@ -79,7 +100,11 @@ float processencoder(float minval, float maxval, int32_t pulses)
         return minval;
       else // pulses > 0
       {
-        return (pulses*((maxval-minval)/max_number_of_pulses))+minval;
+        val = (pulses*((maxval-minval)/max_number_of_pulses))+minval;
+		if(val > maxval)
+		  return maxval;
+		else
+		  return val;
       }
     }
   }
@@ -138,11 +163,18 @@ uint8_t isinrange(uint16_t value, uint16_t reference, uint16_t threshold)
 
 void InitAida(void)
 {
+  #ifdef __AVR__
+  pinMode(ENC_PUSH, INPUT); // 3.3v pull-up provided on Aida DSP board
+  pinMode(ENCA, INPUT);
+  pinMode(ENCB, INPUT);
+  attachInterrupt(1, enc_manager, RISING);  // Arduino Mega: interrupts are on fixed pins only
+  #else
   pinMode(ENC_PUSH, INPUT_PULLUP);
   pinMode(ENCA, INPUT_PULLUP);
   pinMode(ENCB, INPUT_PULLUP);
   attachInterrupt(ENCA, enc_manager, CHANGE); // Interrupt is fired whenever ENC changes state
   attachInterrupt(ENCB, enc_manager, CHANGE); // Both channels, rising-falling for x4 resolution 360°/24*4
+  #endif
   
   pinMode(SBOOT, OUTPUT);
   pinMode(RESET, OUTPUT);
@@ -150,8 +182,9 @@ void InitAida(void)
   digitalWrite(SBOOT, LOW);  // Self-boot: DSP in uC control mode
   digitalWrite(RESET, LOW);  // Hold DSP in RESET state (halted) 
 
-  Wire1.setClock(400000UL); // use i2c peripheral module in fast-mode (400kHz i2c clk)
-  Wire1.begin(); // join i2c bus (address optional for master)
+  WIRE.begin(); // join i2c bus (address optional for master)
+  WIRE.setClock(400000UL); // use i2c peripheral module in fast-mode (400kHz i2c clk)
+  //WIRE.setClock(100000UL); // use i2c peripheral module in default-mode (100kHz i2c clk)
   delay(10); 
 }
 
@@ -167,20 +200,28 @@ void enc_manager(void)
   curr_state = (chA<<1 | chB);		// 2-bit state
   
   //Entered a new valid state.
+  #ifdef ENC_RES_X1
+  if(chB == 1 && chA == 0)
+	Pulses--;
+  else
+	Pulses++;
+  #endif
+  #ifdef ENC_RES_X4
   if (((curr_state ^ prev_state) != INVALID) && (curr_state != prev_state))
   {
       //2 bit state. Right hand bit of prev XOR left hand bit of current
       //gives 0 if clockwise rotation and 1 if counter clockwise rotation.
       change = (prev_state & PREV_MASK) ^ ((curr_state & CURR_MASK) >> 1);
       if (change == 0)
-          Pulses++;
-      else
           Pulses--;
+      else
+          Pulses++;
   }
   else
   {
       // Error
-  } 
+  }
+  #endif  
 }
 
 // Methods for get/set encoder's pulses value
@@ -194,19 +235,31 @@ void setPulses(int32_t value)
 	Pulses = value;
 }
 
+void gainCell(uint8_t dspAddress, uint16_t address, float value)
+{
+	AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, false, value);
+}
+/*
+This function manage a mono volume control 
+ */
+void MasterVolumeMono(uint8_t dspAddress, uint16_t address, float value)
+{
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, false, value);
+}
+
 /*
 This function manage a stereo volume control 
  */
-void MasterVolume(int dspAddress, int address, float value)
+void MasterVolumeStereo(uint8_t dspAddress, uint16_t address, float value)
 {
-  AIDA_SAFELOAD_WRITE(dspAddress, address, false, value);
-  AIDA_SAFELOAD_WRITE(dspAddress, address+1, true, value);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, value);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, value);
 }
 
 /*
 This function manage a 1st order equalizer of two: low pass and high pass
  */
-void EQ1stOrd(int dspAddress, int address, equalizer_t* equalizer){
+void EQ1stOrd(uint8_t dspAddress, uint16_t address, equalizer_t* equalizer){
 
   float w0,gainLinear;
   float b0,b1,a1;
@@ -248,9 +301,9 @@ void EQ1stOrd(int dspAddress, int address, equalizer_t* equalizer){
   }
 
   // Write coefficients to Sigma DSP
-  AIDA_SAFELOAD_WRITE(dspAddress, address++, false, coefficients[0]);
-  AIDA_SAFELOAD_WRITE(dspAddress, address++, false, coefficients[1]);
-  AIDA_SAFELOAD_WRITE(dspAddress, address, false, coefficients[2]);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[0]);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[1]);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, false, coefficients[2]);
 
   //Serial.write('\n'); //!!!Debug!!!
   //Serial.println(coefficients[0], 3);
@@ -261,7 +314,7 @@ void EQ1stOrd(int dspAddress, int address, equalizer_t* equalizer){
 /*
 This function manage a 2nd order equalizer of many types: low pass, parametric...and so on
  */
-void EQ2ndOrd(int dspAddress, int address, equalizer_t* equalizer){
+void EQ2ndOrd(uint8_t dspAddress, uint16_t address, equalizer_t* equalizer){
 
   float A,w0,alpha,gainLinear;
   float b0,b1,b2,a0,a1,a2;
@@ -402,11 +455,11 @@ void EQ2ndOrd(int dspAddress, int address, equalizer_t* equalizer){
   }
 
   // Write coefficients to Sigma DSP
-  AIDA_SAFELOAD_WRITE(dspAddress, address++, false, coefficients[0]);
-  AIDA_SAFELOAD_WRITE(dspAddress, address++, false, coefficients[1]);
-  AIDA_SAFELOAD_WRITE(dspAddress, address++, false, coefficients[2]);
-  AIDA_SAFELOAD_WRITE(dspAddress, address++, false, coefficients[3]);
-  AIDA_SAFELOAD_WRITE(dspAddress, address, false, coefficients[4]);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[0]);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[1]);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[2]);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[3]);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, false, coefficients[4]);
   
   /*Serial.write('\n'); //!!!Debug!!!
   Serial.println(coefficients[0], 3);
@@ -416,7 +469,7 @@ void EQ2ndOrd(int dspAddress, int address, equalizer_t* equalizer){
   Serial.println(coefficients[4], 3);*/
 }
 
-void ToneControl(int dspAddress, int address, toneCtrl_t *toneCtrl){
+void ToneControl(uint8_t dspAddress, uint16_t address, toneCtrl_t *toneCtrl){
  
   float tb,bb,wT,wB,Knum_T,Kden_T,Knum_B,Kden_B,alpha0,beta1,alpha1,beta2,alpha2,beta3,alpha3,beta4;
   float b0,b1,b2,a0,a1,a2;
@@ -481,16 +534,16 @@ void ToneControl(int dspAddress, int address, toneCtrl_t *toneCtrl){
   }
 
   // Write coefficients to Sigma DSP
-  AIDA_SAFELOAD_WRITE(dspAddress, address++, false, coefficients[0]);
-  AIDA_SAFELOAD_WRITE(dspAddress, address++, false, coefficients[1]);
-  AIDA_SAFELOAD_WRITE(dspAddress, address++, false, coefficients[2]);
-  AIDA_SAFELOAD_WRITE(dspAddress, address++, false, coefficients[3]);
-  AIDA_SAFELOAD_WRITE(dspAddress, address, false, coefficients[4]);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[0]);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[1]);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[2]);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[3]);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, false, coefficients[4]);
 }
 
 // Frequency range: 1-19148 Hz
 // q range:			1.28:10			
-void StateVariable(int dspAddress, int address, float frequency, float q){
+void StateVariable(uint8_t dspAddress, uint16_t address, float frequency, float q){
 
   float param1 = 0.00, param2 = 0.00;
 	
@@ -498,8 +551,8 @@ void StateVariable(int dspAddress, int address, float frequency, float q){
   param2 = 1/q;
 	
   // Write parameters to Sigma DSP
-  AIDA_SAFELOAD_WRITE(dspAddress, address++, false, param1);
-  AIDA_SAFELOAD_WRITE(dspAddress, address++, false, param2);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, param1);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, param2);
 }
 
 /*
@@ -527,7 +580,7 @@ This function calculates the curve and the other parameters of a compressor rms 
  hold: range 1-attack [ms]
  decay: range 868-2000 [ms]
  */
-void CompressorRMS(int dspAddress, int address, compressor_t* compressor)    // set ratio = 1 to disable compressor
+void CompressorRMS(uint8_t dspAddress, uint16_t address, compressor_t* compressor)    // set ratio = 1 to disable compressor
 {
   uint8_t i,count;
 
@@ -571,7 +624,7 @@ void CompressorRMS(int dspAddress, int address, compressor_t* compressor)    // 
   // Parameter Load into Sigma DSP
   for(i=0;i<34;i++)
   {
-    AIDA_SAFELOAD_WRITE(dspAddress, address++, false, curve[i]);
+    AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, curve[i]);
   }
   // Conversion dbps -> ms
   // dbps = 121;
@@ -580,25 +633,25 @@ void CompressorRMS(int dspAddress, int address, compressor_t* compressor)    // 
   // RMS TC (db/s)
   dbps = (20/(compressor->attack*2.3))*1e3; 
   attack_par = abs(1.0 - pow(10,(dbps/(10*FS))));
-  AIDA_SAFELOAD_WRITE(dspAddress, address++, true, attack_par);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, true, attack_par);
 
 #ifdef COMPRESSORWITHPOSTGAIN
   postgain_par = pow(10, compressor->postgain/40);
-  AIDA_SAFELOAD_WRITE(dspAddress, address++, true, postgain_par);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, true, postgain_par);
 #endif
 
   // Hold
   hold_par = compressor->hold*FS/1000;  
-  AIDA_SAFELOAD_WRITE(dspAddress, address++, true, hold_par);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, true, hold_par);
 
   // Decay (db/s)
   dbps = (20/(compressor->decay*2.3))*1e3;
   decay_par = dbps/(96*FS); 
-  AIDA_SAFELOAD_WRITE(dspAddress, address, true, decay_par);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, decay_par);
 
 }
 
-void CompressorPeak(int dspAddress, int address, compressor_t* compressor)    // set ratio = 1 to disable compressor
+void CompressorPeak(uint8_t dspAddress, uint16_t address, compressor_t* compressor)    // set ratio = 1 to disable compressor
 {
   uint8_t i,count;
 
@@ -642,31 +695,31 @@ void CompressorPeak(int dspAddress, int address, compressor_t* compressor)    //
   // Parameter Load into Sigma DSP
   for(i=0;i<33;i++)
   {
-    AIDA_SAFELOAD_WRITE(dspAddress, address++, false, curve[i]);
+    AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, curve[i]);
   }
 
 #ifdef COMPRESSORWITHPOSTGAIN
   postgain_par = pow(10, compressor->postgain/40);
-  AIDA_SAFELOAD_WRITE(dspAddress, address++, true, postgain_par);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, true, postgain_par);
 #endif
 
   // Hold
   hold_par = compressor->hold*FS/1000;  
-  AIDA_SAFELOAD_WRITE(dspAddress, address++, true, hold_par);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, true, hold_par);
 
   // Decay (db/s)
   dbps = (20/(compressor->decay*2.3))*1e3;
   decay_par = dbps/(96*FS); 
-  AIDA_SAFELOAD_WRITE(dspAddress, address, true, decay_par);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, decay_par);
 }
 
 // Read audio level signal in 5.19 fixed point format
 // from ReadBack block in Sigma Studio (dbl)
 // and returns in dB
-void readBack(int dspAddress, int address, int capturecount, float *value){
+void readBack(uint8_t dspAddress, uint16_t address, uint16_t capturecount, float *value){
 
   uint8_t buf[3];
-  uint32_t word32;
+  int32_t word32;
 
   buf[0] = capturecount >> 8;
   buf[1] = (uint8_t)capturecount & 0xFF;
@@ -676,29 +729,28 @@ void readBack(int dspAddress, int address, int capturecount, float *value){
 
   AIDA_READ_REGISTER(dspAddress, address, 3, buf);
 
-  word32 = (buf[0]<<16 | buf[1]<<8 | buf[2])&0x00FFFFFF;  // MSB first???
+  word32 = (buf[0]<<24 | buf[1]<<16 | buf[2]<<8)&0xFFFFFF00; // MSB first, convert to 5.27 format
 
   if(word32==0)     // Do not calculate log of 0! Unless you want to deal with huge negative numbers!
-    word32 = 1;  // Absolute minimum, when word32 value is 0x01, value = -114.391381785dB
+    word32 = 1;  // Absolute minimum, when word32 value is 0x01, value = 1.49011612e-8
 
-  *value = 20*log10(((float)word32 / (1<<19))); // Conversion in dB of a fixed point 5.19 format
-  //*value = 96.32959861 * ((float)word32 / (1<<19); // Formula suggested by Analog Devices
+  *value = ((float)word32/(1 << 27)); // I'm converting to 5.27 to maintain sign
 }
 
-void mux(int dspAddress, int address, uint8_t select, uint8_t nchannels)
+void mux(uint8_t dspAddress, uint16_t address, uint8_t select, uint8_t nchannels)
 {
   uint8_t i;
 
   for(i=1;i<=nchannels;i++)
   {
     if(i==select)
-      AIDA_WRITE_REGISTER_VALUE(dspAddress, address++, 1.00);  
+      AIDA_WRITE_VALUE(dspAddress, address++, 1.00);  
     else
-      AIDA_WRITE_REGISTER_VALUE(dspAddress, address++, 0.00);  
+      AIDA_WRITE_VALUE(dspAddress, address++, 0.00);  
   }  
 }
 
-void hard_clip(int dspAddress, int address, float th_high, float th_low)
+void hard_clip(uint8_t dspAddress, uint16_t address, float th_high, float th_low)
 {
   uint8_t buffer[12];
   
@@ -709,112 +761,173 @@ void hard_clip(int dspAddress, int address, float th_high, float th_low)
   AIDA_WRITE_REGISTER(dspAddress, address, 12, buffer);
 }
 
-void soft_clip(int dspAddress, int address, float alpha)
+void soft_clip(uint8_t dspAddress, uint16_t address, float alpha)
 {
   float onethird = 0.333;
   float twothird = 0.666;
   
-  AIDA_SAFELOAD_WRITE(dspAddress, address++, false, alpha);
-  AIDA_SAFELOAD_WRITE(dspAddress, address++, false, 1/alpha);
-  AIDA_SAFELOAD_WRITE(dspAddress, address++, false, onethird);
-  AIDA_SAFELOAD_WRITE(dspAddress, address++, true, twothird);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, alpha);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, 1/alpha);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, onethird);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, true, twothird);
 }
 
-void dc_source(int dspAddress, int address, uint8_t percent)
+void dc_source(uint8_t dspAddress, uint16_t address, float value)
 {
-  float value = 0.00;
-  
-  value=((float)percent/100.00)*1.0;
-
-  AIDA_SAFELOAD_WRITE(dspAddress, address, true, value);
+  AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, value);
 }
 
-void sine_source(int dspAddress, int address, float frequency)
+void sine_source(uint8_t dspAddress, uint16_t address, float frequency)
 {
 	float value = (1.00/24000.00)*frequency;
 	uint8_t buffer[4]={0x00, 0x00, 0x00, 0xFF};
-	//AIDA_SAFELOAD_WRITE(dspAddress, address++, false, 255.00); // mask	 
-	AIDA_WRITE_REGISTER(dspAddress, address++, 4, buffer);		 // mask
-	AIDA_SAFELOAD_WRITE(dspAddress, address++, false, value);	 // increment
-	AIDA_SAFELOAD_WRITE(dspAddress, address, true, 1.0);	 	 // ison
+ 
+	AIDA_SAFELOAD_WRITE_REGISTER(dspAddress, address++, false, buffer);		 // mask
+	AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, value);	 // increment
+	AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, 1.0);	 	 // ison
 }
 
-void sawtooth_source(int dspAddress, int address, float frequency)
+void sawtooth_source(uint8_t dspAddress, uint16_t address, float frequency)
 {
 	float value = (0.50/24000.00)*frequency;
 	
-	AIDA_SAFELOAD_WRITE(dspAddress, address++, false, value);	 // increment
-	AIDA_SAFELOAD_WRITE(dspAddress, address, true, 1.0);	 	 // ison
+	AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, value);	 // increment
+	AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, 1.0);	 	 // ison
 }
 
-void square_source(int dspAddress, int address, float frequency)
+void square_source(uint8_t dspAddress, uint16_t address, float frequency)
 {
 	sine_source(dspAddress, address, frequency);	// same as sine source
 }
 
-void triangle_source(int dspAddress, int address, float frequency)
+void triangle_source(uint8_t dspAddress, uint16_t address, float frequency)
 {
 	float value = (0.50/24000.00)*frequency;
 	uint8_t buffer[4]={0x00, 0x00, 0x00, 0x03};
 	
-	AIDA_SAFELOAD_WRITE(dspAddress, address++, false, 0.00);	// Triangle algorithm
-	AIDA_SAFELOAD_WRITE(dspAddress, address++, false, 1.00);
-	AIDA_SAFELOAD_WRITE(dspAddress, address++, false, 0.00);
-	AIDA_SAFELOAD_WRITE(dspAddress, address++, true, -1.00);
-	
-	//AIDA_SAFELOAD_WRITE(dspAddress, address++, false, 3.00); 	 // mask
-	AIDA_WRITE_REGISTER(dspAddress, address++, 4, buffer);		 // mask
-	AIDA_SAFELOAD_WRITE(dspAddress, address++, false, value);	 // increment
-	AIDA_SAFELOAD_WRITE(dspAddress, address, true, 1.0);	 	 // ison
+	AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, 0.00);	// Triangle algorithm
+	AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, 1.00);
+	AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, 0.00);
+	AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, true, -1.00);
+	//Delay(1);	// ???Necessary???
+	 	 
+	AIDA_SAFELOAD_WRITE_REGISTER(dspAddress, address++, false, buffer);		 // mask
+	AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, value);	 // increment
+	AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, 1.0);	 	 // ison
 }
 
 // PRIVATE FUNCTIONS DEFINITIONS (DO NOT EDIT)	             
 
-void float_to_fixed(float value, uint8_t buffer[])  
+void float_to_fixed(float value, uint8_t *buffer)  
 {
-  uint32_t fixedval = 0;
-
+  int32_t fixedval = 0;
+  
   fixedval = FLOAT_TO_FIXED(value);
-  buffer[0] = (fixedval>>24)&0xff;
+  buffer[0] = (fixedval>>24)&0xFF;
   buffer[1] = (fixedval>>16)&0xFF;
   buffer[2] = (fixedval>>8)&0xFF;
-  buffer[3] = fixedval&0xFF;
+  buffer[3] = fixedval&0xFF; 
 }
 
-void AIDA_WRITE_REGISTER(int dspAddress, int address, int length, uint8_t *data)  
+void print_fixed_number(int32_t fixedval)
 {
-  int i;
+	uint8_t c = 0, i;
+	uint8_t buffer[4];
+	
+	Serial.print(F("Fixed val: 0x"));
+	buffer[0] = (fixedval>>24)&0xFF;
+	buffer[1] = (fixedval>>16)&0xFF;
+	buffer[2] = (fixedval>>8)&0xFF;
+	buffer[3] = fixedval&0xFF;
+	
+	for(i=0;i<4;i++)
+	{
+		c = buffer[i];
+		if(c&0xF0)
+			Serial.print(c, HEX);
+		else
+		{
+			Serial.print(0, HEX);
+			Serial.print(c, HEX);
+		}
+	}
+	Serial.print(F("\n\r"));
+}
+
+
+void AIDA_WRITE_REGISTER(uint8_t dspAddress, uint16_t address, uint8_t length, uint8_t *data)  
+{
+  uint8_t i;
   byte LSByte = 0x00;
   byte MSByte = 0x00;
   byte res = 0x00;
 
-  Wire1.beginTransmission(dspAddress);  // Begin write
+  WIRE.beginTransmission(dspAddress);  // Begin write
   LSByte = (byte)address & 0xFF;
   MSByte = address >> 8;
-  Wire1.write(MSByte);             // Sends High Address
-  Wire1.write(LSByte);             // Sends Low Address
+  WIRE.write(MSByte);             // Sends High Address
+  WIRE.write(LSByte);             // Sends Low Address
 
   for(i=0;i<length;i++)
   {
-    Wire1.write((byte)data[i]);             // sends bytes 
+    WIRE.write((byte)data[i]);             // sends bytes 
   }
-  Wire1.endTransmission(true);     // Write out data to I2C and stop transmitting
+  WIRE.endTransmission(true);     // Write out data to I2C and stop transmitting
 }
 
-void AIDA_WRITE_REGISTER_BLOCK(int dspAddress, int address, int length, const uint8_t *data)
+void AIDA_WRITE_REGISTER_BLOCK(uint8_t dspAddress, uint16_t address, uint16_t length, const uint8_t *data)
 { 
   uint16_t res = 0;
 
-  Wire1.beginTransmission(dspAddress);  // Begin write
+  WIRE.beginTransmission(dspAddress);  // Begin write
 
-  res = Wire1.writeBlock((uint8_t *)data, length, address);
-
-  //Serial.println(res, DEC);
+  res = WIRE.writeBlock(data, length, address);
   
-  Wire1.endTransmission(true);     // Write out data to I2C and stop transmitting
+  WIRE.endTransmission(true);     // Write out data to I2C and stop transmitting
 }
 
-void AIDA_SAFELOAD_WRITE(int dspAddress, int address, boolean finish, float value)
+void AIDA_WRITE_VALUE(uint8_t dspAddress, uint16_t address, float value)
+{
+  uint8_t buf[4];
+
+  float_to_fixed(value, buf);
+
+  AIDA_WRITE_REGISTER(dspAddress, address, 4, buf);
+
+}
+
+void AIDA_SAFELOAD_WRITE_REGISTER(uint8_t dspAddress, uint16_t address, boolean finish, uint8_t *data)
+{
+	uint8_t buf[5];
+	static uint16_t count = 0;
+	
+	buf[0] = (address>>8)&0xFF;
+	buf[1] = address&0xFF;
+	AIDA_WRITE_REGISTER(dspAddress, 0x0815+count, 2, buf); // load safeload address 0
+	// Q: Why are the safeload registers five bytes long, while I'm loading four-byte parameters into the RAM using these registers?
+	// A: The safeload registers are also used to load the slew RAM data, which is five bytes long. For parameter RAM writes using safeload, 
+	// the first byte of the safeload register can be set to 0x00.
+	buf[0] = 0;
+	buf[1] = data[0];
+	buf[2] = data[1];
+	buf[3] = data[2];
+	buf[4] = data[3];
+	AIDA_WRITE_REGISTER(dspAddress, 0x0810+count, 5, buf);  // load safeload data 0
+	
+	if(finish == true || count == 4)  // Max 5 safeload memory registers
+	{
+		buf[0] = 0x00;
+		buf[1] = 0x3C;
+		AIDA_WRITE_REGISTER(dspAddress, 0x081C, 2, buf);  //  IST (initiate safeload transfer bit)
+		count = 0;
+	}
+	else
+	{ 
+		count++;
+	}
+}
+
+void AIDA_SAFELOAD_WRITE_VALUE(uint8_t dspAddress, uint16_t address, boolean finish, float value)
 {
   uint8_t buf[5];
   static uint16_t count = 0;
@@ -842,37 +955,31 @@ void AIDA_SAFELOAD_WRITE(int dspAddress, int address, boolean finish, float valu
   } 
 }
 
-void AIDA_WRITE_REGISTER_VALUE(int dspAddress, int address, float value)
-{
-  uint8_t buf[4];
-
-  float_to_fixed(value, buf);
-
-  AIDA_WRITE_REGISTER(dspAddress, address, 4, buf);
-
-}
-
-void AIDA_READ_REGISTER(int dspAddress, int address, int length, uint8_t *data)
+void AIDA_READ_REGISTER(uint8_t dspAddress, uint16_t address, uint8_t length, uint8_t *data)
 {
   uint8_t index = 0;
   byte LSByte = 0x00;
   byte MSByte = 0x00;
 
-  Wire1.beginTransmission(dspAddress);  // Begin write
+  #ifdef __AVR__
+  WIRE.beginTransmission(dspAddress);  // Begin write
 
   // Send the internal address I want to read
   LSByte = (byte)address & 0xFF;
   MSByte = address >> 8;
-  Wire1.write(MSByte);             // Sends High Address
-  Wire1.write(LSByte);             // Sends Low Address
+  WIRE.write(MSByte);             // Sends High Address
+  WIRE.write(LSByte);             // Sends Low Address
 
-  Wire1.endTransmission(false);    // Write out data to I2C but don't send stop condition on I2C bus
-
-  Wire1.requestFrom(dspAddress, length);    // request 3 bytes from slave device 
-
-  while(Wire1.available())         // slave may send less than requested
+  WIRE.endTransmission(false);    // Write out data to I2C but don't send stop condition on I2C bus
+  
+  WIRE.requestFrom(dspAddress, length);    // request n bytes from slave device 
+  #else
+  WIRE.requestFromReg16(dspAddress, address, length, true); // Arduino 2 doesn't support restart natively O.o
+  #endif
+  
+  while(WIRE.available())         // slave may send less than requested
   { 
-    data[index++] = Wire1.read();  // receive a byte as character    
+    data[index++] = WIRE.read();  // receive a byte as character    
   } 
 }
 

@@ -47,9 +47,10 @@ public:
     uint8_t requestFrom(uint8_t, uint8_t, uint8_t);
 	uint8_t requestFrom(int, int);
     uint8_t requestFrom(int, int, int);
+	uint8_t requestFromReg16(uint8_t, uint16_t, uint8_t, uint8_t);
 	virtual size_t write(uint8_t);
 	virtual size_t write(const uint8_t *, size_t);
-	size_t writeBlock(uint8_t *, size_t, uint16_t);
+	size_t writeBlock(const uint8_t *, size_t, uint16_t);
 	virtual int available(void);
 	virtual int read(void);
 	virtual int peek(void);
@@ -77,7 +78,7 @@ private:
 	uint8_t txBufferLength;
 	uint16_t txWriteRomIndex;
 	uint16_t txWriteRomQuantity;
-	uint8_t *PtrTxRomBuffer;
+	const uint8_t *PtrTxRomBuffer;
 
 	// Service buffer
 	uint8_t srvBuffer[BUFFER_LENGTH];
