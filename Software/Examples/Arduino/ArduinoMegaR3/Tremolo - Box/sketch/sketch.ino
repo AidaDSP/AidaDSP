@@ -31,6 +31,8 @@
  NOTE:
  Attenuation Out/In = 2.264, to have out = in you must provide 7.097dB of gain through DSP algorithm
  or externally with active LPF filter.
+ Sigma Studio seems to send 0xFF on 0x09 address of params. This is the -1 on a triangular lookup table. 
+ But then it's readed 0x0F, because 4 msb(its) are don't care in 5.23 fixed point format. 
  
  created November 2014
  by Massimo Pennazio
@@ -384,7 +386,7 @@ void loop()
   } // End if 1000ms tick
   
   // LED1 (Tap Tempo) Blink
-  if(push1_delta!=0)
+  /*if(push1_delta!=0)
   {
     delta_led1 = millis()-delta_led1; 
     if(delta_led1 == push1_delta)
@@ -392,7 +394,7 @@ void loop()
       status_led1 ^= 1;
       digitalWrite(LED_1, status_led1);
     }
-  }
+  } */
   
 } // End void loop
 
@@ -834,7 +836,7 @@ void print_menu_lcd(void)
 
 void push1_isr(void)
 {
-  if(push1_pressed)
+  /*if(push1_pressed)
   {
     push1_delta = millis() - push1_start;
     if(push1_delta < 20)
@@ -856,7 +858,7 @@ void push1_isr(void)
   {
     push1_start = millis();
     push1_pressed = 1;
-  } 
+  }*/
 }
 
 /*void push2_isr(void)
