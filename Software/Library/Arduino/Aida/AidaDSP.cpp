@@ -955,6 +955,34 @@ void AIDA_SAFELOAD_WRITE_VALUE(uint8_t dspAddress, uint16_t address, boolean fin
   } 
 }
 
+void AIDA_SW_SAFELOAD_WRITE_VALUES(uint8_t dspAddress, uint16_t address, uint8_t nvalues, float *values)
+{
+	uint8_t i, buf[4];
+	uint32_t value32b = 0;
+	uint16_t value16b = 0;
+
+	for(i=0;i<nvalues;i++)
+	{
+		float_to_fixed(values[i], buf);
+		AIDA_WRITE_REGISTER(dspAddress, 0x0001+i, 4, buf);  //  Write values in 0x0000-0x0005 
+		if(nvalues==5)
+			break;
+	}
+	value16b = address;
+	value32b = value16b-1; 
+	buf[0] = (value32b>>24)&0xFF; // MSB first
+	buf[0] = (value32b>>16)&0xFF;
+	buf[0] = (value32b>>8)&0xFF;
+	buf[0] = (value32b)&0xFF;
+	AIDA_WRITE_REGISTER(dspAddress, 0x0006, 4, buf);  //  Write destination address-1 in 0x0006
+	value32b = nvalues;
+	buf[0] = (value32b>>24)&0xFF; // MSB first
+	buf[0] = (value32b>>16)&0xFF;
+	buf[0] = (value32b>>8)&0xFF;
+	buf[0] = (value32b)&0xFF;
+	AIDA_WRITE_REGISTER(dspAddress, 0x0007, 4, buf);  //  Write nvalues in 0x0007
+}
+
 void AIDA_READ_REGISTER(uint8_t dspAddress, uint16_t address, uint8_t length, uint8_t *data)
 {
   uint8_t index = 0;
