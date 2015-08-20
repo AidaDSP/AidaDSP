@@ -964,7 +964,7 @@ void AIDA_SW_SAFELOAD_WRITE_VALUES(uint8_t dspAddress, uint16_t address, uint8_t
 	for(i=0;i<nvalues;i++)
 	{
 		float_to_fixed(values[i], buf);
-		AIDA_WRITE_REGISTER(dspAddress, 0x0001+i, 4, buf);  //  Write values in 0x0000-0x0005 
+		AIDA_WRITE_REGISTER(dspAddress, 0x0001+i, 4, buf);  //  Write values in 0x0001-0x0005 
 		if(nvalues==5)
 			break;
 	}

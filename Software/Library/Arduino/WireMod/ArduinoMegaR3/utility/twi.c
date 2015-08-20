@@ -512,8 +512,8 @@ ISR(TWI_vect)
 				else
 				{
 					// copy data to output register and ack
-					//TWDR = pgm_read_byte_near(twi_dataPtr++); // Use macro to access program space memory
-					TWDR = pgm_read_byte_far(twi_dataPtr++); // Use macro to access program space memory
+					TWDR = pgm_read_byte_near(twi_dataPtr++); // Use macro to access program space memory
+					//TWDR = pgm_read_byte_far(twi_dataPtr++); // Use macro to access program space memory
 					twi_blockIndex++;
 				}
 				twi_reply(1);
