@@ -1,7 +1,7 @@
 /*
  AIDA Mono Reverb Sketch
  	
- This sketch controls a Mono Reverb algorithm and the mix with dry audio signal. 
+ This sketch controls a Mono Reverb algorithm and the mix with Dry Audio Signal. 
  
  This sketch was written for the Arduino, and will not work on other boards.
  	
@@ -201,7 +201,8 @@ void loop()
         Serial.print(volume, 1);
         Serial.println(F("dB"));
         
-        lcd.setCursor(5, 1);
+        lcd.clear();
+        lcd.setCursor(0, 1);
         lcd.print(volume,1);
         lcd.print(F("dB"));
 
