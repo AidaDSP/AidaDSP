@@ -260,7 +260,7 @@ void VolumeControl(float value)  // Use this function until I adjust code for Ma
 void check_program(void) 
 {
   uint8_t value_wr = 0;
-  uint8_t buff_r[5];
+  uint8_t buff_r[6];
   uint8_t value_r;
   uint16_t addr = progDataAddr;
   uint16_t i, j, errors;
@@ -268,11 +268,11 @@ void check_program(void)
   Serial.println(F("Program checking..."));
   
   errors = 0;
-  for(i=0;i<progDataSize;i+=5) // Program address 1024 to 2047
+  for(i=0;i<progDataSize;i+=6) // Program address 8192 to 12287 6 bytes read write
   {
-    memset(buff_r, 0, 5);
-    AIDA_READ_REGISTER(DEVICE_ADDR_7bit, addr, 5, buff_r); 
-    for(j=0;j<5;j++)
+    memset(buff_r, 0, 6);
+    AIDA_READ_REGISTER(DEVICE_ADDR_7bit, addr, 6, buff_r); 
+    for(j=0;j<6;j++)
     {
       #ifdef __AVR__
       //value_wr = pgm_read_byte_far(&progDataData[i+j]);
@@ -328,7 +328,7 @@ void check_param(void)
   Serial.println(F("Parameter checking..."));
   
   errors = 0;
-  for(i=0;i<ParamSize;i+=4) // 0 to 1023
+  for(i=0;i<ParamSize;i+=4) // 0 to 4095 4 bytes read write
   {
     memset(buff_r, 0, 4);
     AIDA_READ_REGISTER(DEVICE_ADDR_7bit, addr, 4, buff_r); 
