@@ -356,15 +356,25 @@ void check_param(void)
   if(errors)
   {
     Serial.print(errors, DEC);
-    Serial.println(F(" errors during Reg Param download")); 
+    Serial.println(F(" errors during Param download")); 
     Serial.print(F("Address: "));
     Serial.println(addr, DEC);
     Serial.print(F("Written = "));
-    Serial.print(F("0x"));
-    Serial.println(value_wr, HEX);
+    for(j=0;j<4;j++)
+    {
+      value_wr = pgm_read_byte_near(&ParamData[i+j]);
+      Serial.print(F("0x"));
+      Serial.print(value_wr, HEX);
+    }
+    Serial.write('\n');
+    
     Serial.print(F("Readed = "));
-    Serial.print(F("0x"));
-    Serial.println(value_r, HEX);
+    for(j=0;j<4;j++)
+    {
+      value_r = buff_r[j];
+      Serial.print(F("0x"));
+      Serial.print(value_r, HEX);
+    }
     while(1);
   }
   else
