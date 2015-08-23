@@ -95,7 +95,7 @@ void setup()
   delay(20);
   check_program(); // !!! Debug
   delay(5);
-  check_param(); // !!! Debug
+  //check_param(); // !!! Debug
   delay(5);
   spettacolino();
   //MasterVolume(DEVICE_ADDR_7bit, Single1, 1.00);    // With DAC in mute, set volume to 1
@@ -249,12 +249,32 @@ void clearAndHome(void)
 // Write Volume linear value onto DSP with Sw Safeload
 void VolumeControl(float value)  // Use this function until I adjust code for MasterVolume in Aida DSP API
 {
-  float data[5];
+  /*float data[5];
   
   memset(data, 0.00, 5);
   data[0] = value;
   
-  AIDA_SW_SAFELOAD_WRITE_VALUES(DEVICE_ADDR_7bit, Single1, 1, data);
+  AIDA_SW_SAFELOAD_WRITE_VALUES(DEVICE_ADDR_7bit, Single1, 1, data);*/
+  
+  uint8_t buf[8];
+  
+  memset(buf, 0, 8);
+  
+  float_to_fixed(value, buf);
+  
+  AIDA_WRITE_REGISTER_BLOCK(DEVICE_ADDR_7bit, Single1, 4, buf); // Gain 
+  
+  // Writing constants to NonModuloRAM
+  buf[0] = 0x00;  // Alpha 1 = 0.999
+  buf[1] = 0x7F;
+  buf[2] = 0xF2;
+  buf[3] = 0x59;
+  
+  buf[4] = 0x00; // Alpha 2 = 0.0004
+  buf[5] = 0x00;
+  buf[6] = 0x0D;
+  buf[7] = 0xA7;
+  AIDA_WRITE_REGISTER_BLOCK(DEVICE_ADDR_7bit, 24574, 8, buf); // Alpha
 }
 
 void check_program(void) 
@@ -364,16 +384,22 @@ void check_param(void)
     {
       value_wr = pgm_read_byte_near(&ParamData[i+j]);
       Serial.print(F("0x"));
+      if((value_wr&0xF0)==0x00)
+        Serial.print(F("0"));
       Serial.print(value_wr, HEX);
+      Serial.print(F(" "));
     }
-    Serial.write('\n');
+    Serial.println(F(""));
     
     Serial.print(F("Readed = "));
     for(j=0;j<4;j++)
     {
       value_r = buff_r[j];
       Serial.print(F("0x"));
+      if((value_r&0xF0)==0x00)
+        Serial.print(F("0"));
       Serial.print(value_r, HEX);
+      Serial.print(F(" "));
     }
     while(1);
   }
