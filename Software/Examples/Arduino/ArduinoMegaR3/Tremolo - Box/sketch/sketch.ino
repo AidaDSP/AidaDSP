@@ -55,6 +55,8 @@
 #define VOLMIN -80.00
 #define FREQMIN 0.1f // Hz
 #define FREQMAX 35.0f // Hz
+#define BPMMIN 5.0f
+#define BPMMAX 160.0f
 //#define FREQMIN 1000.0f // Hz
 //#define FREQMAX 10000.0f // Hz
 #define COLORMIN -15.00f // dB
@@ -100,6 +102,7 @@ uint8_t restore = 1;
 uint8_t mixvalue = 0;
 uint16_t readbackcount = 0;
 int32_t freqpulses = 198;
+int32_t bpmpulses = 213;
 int32_t lfotypepulses = 0;
 int32_t modepulses = 0;
 int32_t colorpulses = 0;
@@ -111,6 +114,7 @@ uint32_t time=0, prevtime=0;
 float volumedB = 0.00;
 float volume = 0.00;
 float frequency = 0.00;
+float bpm = 0.00;
 float colorvalue = 0.00;
 float depthvalue = 0.00;
 float readback = 0.00;
@@ -123,17 +127,20 @@ float pot1 = 0.00;
 // Push Encoder
 uint8_t push_e_count = 0;
 uint8_t push_e_function = 0;
-// Push1
+// Push 1
 uint32_t push1_start = 0;
 uint32_t push1_delta = 0;
 uint8_t push1_pressed = 0;
-float bpm = 120.00;
+float bpm1 = 0.00;
+// Push 2
+uint8_t push_2_lock = 0;
+
 // Led1 
 uint32_t delta_led1 = 0;
 uint8_t status_led1 = 0;
 
 // Configure pins for LCD display
-LiquidCrystal lcd(17, 16, 15, 14, 6, 7); // RS, EN, D4, D3, D2, D1
+LiquidCrystal lcd(17, 16, 15, 14, 6, 7); // RS, EN, D4, D5, D6, D7
 
 void setup()
 {
@@ -187,6 +194,10 @@ void setup()
   delayMicroseconds(100);
   mux(DEVICE_ADDR_7bit, Abs, 2, 2); // Abs Off
   delayMicroseconds(100);
+  
+  // Bypass status init = disable
+  bypass = 0;
+  digitalWrite(LED_2, LOW);
 }
 
 void loop()
@@ -230,12 +241,16 @@ void loop()
     delay(50);  // debounce
     if(digitalRead(PUSH_2)==LOW)
     {
-      bypass ^= 1;
-      digitalWrite(LED_2, bypass);
+      if(push_2_lock != 1)
+      {
+        push_2_lock = 1;
+        bypass ^= 1;
+      }
     }
   }
   else
   {
+    push_2_lock = 0;
   }
 
   time = millis();
@@ -295,11 +310,15 @@ void loop()
       if(restore)
       {
         restore = 0;
-        setPulses(freqpulses);
+        //setPulses(freqpulses);
+        setPulses(bpmpulses);
       }
       set_regulation_precision(ON); // Fine regulation
-      freqpulses = getPulses();
-      frequency = processencoder(FREQMIN, FREQMAX, freqpulses);
+      //freqpulses = getPulses();
+      bpmpulses = getPulses();
+      //frequency = processencoder(FREQMIN, FREQMAX, freqpulses);
+      bpm = processencoder(BPMMIN, BPMMAX, bpmpulses);
+      frequency = bpm / 60.0;
       setFrequency();
       break;
     case 1: // LFO type
@@ -772,6 +791,9 @@ void print_menu_putty(void)
   Serial.write('\n');
   Serial.print(F("Active item: "));
   Serial.println(func_counter, DEC);
+  
+  Serial.print(F("BPM1: ")); // !!! Debug
+  Serial.println(bpm1, 2); // !!! Debug
 }
 
 void print_menu_lcd(void)
@@ -785,18 +807,20 @@ void print_menu_lcd(void)
     switch(func_counter)
     {
       case 0:
-        lcd.print(F("Freq. "));
-        lcd.print(frequency, 1);
-        lcd.print(F(" Hz"));
+        //lcd.print(F("Freq. "));
+        //lcd.print(frequency, 1);
+        //lcd.print(F(" Hz"));
+        lcd.print(F("BPM: "));
+        lcd.print(bpm, 2);
         break;
       case 1:
         lcd.print(F("Lfo type: "));
         if(lfotype==1)
-          lcd.print(F("triangular"));
+          lcd.print(F("triang"));
         if(lfotype==2)
           lcd.print(F("sine"));
         if(lfotype==3)
-          lcd.print(F("sawtooth"));
+          lcd.print(F("saw"));
         if(lfotype==4)
           lcd.print(F("square"));
         break;
@@ -836,13 +860,13 @@ void print_menu_lcd(void)
 
 void push1_isr(void)
 {
-  /*if(push1_pressed)
+  if(push1_pressed)
   {
     push1_delta = millis() - push1_start;
-    if(push1_delta < 20)
+    if(push1_delta < 50)
     {
       // Do not change current bpm
-      
+      push1_delta = 0.0;
     }
     else if(push1_delta > 5000)
     {
@@ -851,14 +875,15 @@ void push1_isr(void)
     }
     else // Valid range
     {
-      bpm = 60.000f / push1_delta;
+      //bpm1 = 60.000f / push1_delta;
+      bpm1 = push1_delta;
     }
   }
   else
   {
     push1_start = millis();
     push1_pressed = 1;
-  }*/
+  }
 }
 
 /*void push2_isr(void)
