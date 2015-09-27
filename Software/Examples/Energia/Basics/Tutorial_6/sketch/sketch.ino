@@ -1,7 +1,7 @@
 /*
- AIDA Tutorial_5 Sketch
+ AIDA Tutorial_6 Sketch
  	
- This sketch controls a stereo rms compressor with post gain using the structure of Template2.
+ This sketch controls a peak rms compressor with post gain using the structure of Template2.
  This sketch was written for Stellaris/TivaC Launchpad, and will not work on other boards.
  	
  The circuit:
@@ -105,7 +105,7 @@ void setup()
   clearAndHome();
   Serial.println(F("Aida DSP control with LAUNCHPAD")); // Welcome message
   Serial.print(F("0x"));
-  Serial.println((DEVICE_ADDR_7bit<<1)&~0x01, HEX);
+  Serial.println((DEVICE_ADDR_7bit<<1)&~0x01, HEX); // Print I2C Dsp address
 
   InitAida(); // Initialize DSP board 
   digitalWrite(RESET, HIGH); // Wake up DSP
@@ -187,7 +187,7 @@ void loop()
     clearAndHome();    // !!!Warning use with real terminal emulation program
     Serial.println(F("********************************"));
     Serial.println(F("*    User control interface    *"));
-    Serial.println(F("*    AIDA Tutorial_5 Sketch    *"));
+    Serial.println(F("*    AIDA Tutorial_6 Sketch    *"));
     Serial.println(F("********************************"));
     Serial.println(F(""));
     Serial.print(F(" Encoder pulses: "));
@@ -225,7 +225,7 @@ void loop()
       if(param1_value != comp1.threshold)
       {
         comp1.threshold = param1_value;
-        CompressorRMS(DEVICE_ADDR_7bit, Compressor1, &comp1);
+        CompressorPeak(DEVICE_ADDR_7bit, Compressor1, &comp1);
       }
       break;
     case 1: // PARAM2
@@ -243,19 +243,19 @@ void loop()
         {
           case 1:
             comp1.ratio = 1.0;
-            CompressorRMS(DEVICE_ADDR_7bit, Compressor1, &comp1);
+            CompressorPeak(DEVICE_ADDR_7bit, Compressor1, &comp1);
             break;
           case 2:
             comp1.ratio = 2.0;
-            CompressorRMS(DEVICE_ADDR_7bit, Compressor1, &comp1);
+            CompressorPeak(DEVICE_ADDR_7bit, Compressor1, &comp1);
             break;
           case 3:
             comp1.ratio = 6.0;
-            CompressorRMS(DEVICE_ADDR_7bit, Compressor1, &comp1);
+            CompressorPeak(DEVICE_ADDR_7bit, Compressor1, &comp1);
             break;
           case 4:
             comp1.ratio = 8.0;
-            CompressorRMS(DEVICE_ADDR_7bit, Compressor1, &comp1);
+            CompressorPeak(DEVICE_ADDR_7bit, Compressor1, &comp1);
             break;
         }
       }
@@ -271,7 +271,7 @@ void loop()
       if(param3_value != comp1.attack)
       {
         comp1.attack = param3_value;
-        CompressorRMS(DEVICE_ADDR_7bit, Compressor1, &comp1);
+        //CompressorPeak(DEVICE_ADDR_7bit, Compressor1, &comp1); // Peak Compressor doesn't have attack parameter!!!
       }
       break;
     case 3: // PARAM4
@@ -285,7 +285,7 @@ void loop()
       if(param4_value != comp1.hold)
       {
         comp1.hold = param4_value;
-        CompressorRMS(DEVICE_ADDR_7bit, Compressor1, &comp1);
+        CompressorPeak(DEVICE_ADDR_7bit, Compressor1, &comp1);
       }
       break;
     case 4: // PARAM5
@@ -299,7 +299,7 @@ void loop()
       if(param5_value != comp1.decay)
       {
         comp1.decay = param5_value;
-        CompressorRMS(DEVICE_ADDR_7bit, Compressor1, &comp1);
+        CompressorPeak(DEVICE_ADDR_7bit, Compressor1, &comp1);
       }
       break;
     case 5: // PARAM 6
@@ -313,7 +313,7 @@ void loop()
       if(param6_value != comp1.postgain)
       {
         comp1.postgain = param6_value;
-        CompressorRMS(DEVICE_ADDR_7bit, Compressor1, &comp1);
+        CompressorPeak(DEVICE_ADDR_7bit, Compressor1, &comp1);
       }
       break;
     case 6: // PARAM 7

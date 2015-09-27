@@ -1,10 +1,9 @@
 /*
- AIDA Tutorial_9 Sketch
+ AIDA Tutorial_8 Sketch
  	
- This sketch uses various types of spatializer algorithms.
- The result is a more natural 3D sound and stereo image widening. 
- This works very well with headphones.  
- This sketch was written for the Stellaris, and will not work on other boards.
+ This sketch controls a distortion hard & soft (tube) clipping with pre and post equalization & gain using the 
+ structure of Template1.
+ This sketch was written for Stellaris/TivaC Launchpad, and will not work on other boards.
  	
  The circuit:
  
@@ -13,7 +12,7 @@
  * Output range 0.9Vrms (2.5Vpp, 1.30dBu) 
  
  PC:
- * Please connect with PuTTY on Arduino2 USB Serial with a PC for a minimal user interface
+ * Please connect with PuTTY on Stellaris USB Serial with a PC for a minimal user interface
  
  NOTE:
  Attenuation Out/In = 2.264, to have out = in you must provide 7.097dB of gain through DSP algorithm
@@ -58,7 +57,7 @@ uint8_t preset = 0;
 uint8_t restore = OFF;
 uint8_t restoreflag = false;
 uint16_t PotValue = 0;
-uint32_t time=0, prevtime=0;
+uint32_t timec=0, prevtimec=0;
 
 float volume = 0.00;
 
@@ -73,19 +72,17 @@ void setup()
   // open the USBSerial port
   Serial.begin(115200);
   clearAndHome();
-  Serial.println("Aida DSP control with TivaC"); // Welcome message
-  Serial.print("0x");
-  Serial.println((DEVICE_ADDR_7bit<<1)&~0x01, HEX);
+  Serial.println(F("Aida DSP control with STELLARIS")); // Welcome message
+  Serial.print(F("0x"));
+  Serial.println((DEVICE_ADDR_7bit<<1)&~0x01, HEX); // Write DSP I2C address
 
   // DSP board
   InitAida();	// Initialize DSP board
   digitalWrite(RESET, HIGH); // Wake up DSP
   delay(100);  // Start-up delay for DSP
   program_download();    // Here we load program, parameters and hardware configuration to DSP
+  delay(20);
   spettacolino();
-  MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, 0.00);    // With DAC in mute, set volume to 0
-  delay(1);   
-  AIDA_WRITE_REGISTER_BLOCK(DEVICE_ADDR_7bit, CoreRegisterR4Addr, CoreRegisterR4Size, CoreRegisterR4Data);    // Mute DAC Off
 }
 
 void loop()
@@ -122,20 +119,22 @@ void loop()
     submenu ^=1; 
   }
 
-  time = millis();
-  if(time-prevtime >= 1000)  // Here we manage control interface every second
+  timec = millis();
+  if(timec-prevtimec >= 750)  // Here we manage control interface every 750ms
   {
     clearAndHome();    // !!!Warning use with real terminal emulation program
-    Serial.println("********************************");
-    Serial.println("*    User control interface    *");
-    Serial.println("*    AIDA Tutorial_9 Sketch    *");
-    Serial.println("********************************");
-    Serial.println("Press button rapidly to switch mute on/off,");
-    Serial.println("press button for 1 sec to enter submenu.");
-    Serial.write('\n');
+    Serial.println(F("********************************"));
+    Serial.println(F("*    User control interface    *"));
+    Serial.println(F("*    AIDA Tutorial_8 Sketch    *"));
+    Serial.println(F("********************************"));
+    Serial.println(F("Press button rapidly to switch mute on/off,"));
+    Serial.println(F("press button for 1 sec to enter submenu."));
+    Serial.println("");
 
-    Serial.print("Encoder pulses: ");
+    Serial.print(F(" Encoder pulses: "));
     Serial.println(getPulses(), DEC);
+    Serial.println("");
+    Serial.println("");
     if(mute == OFF)
     {
       if(submenu == OFF)
@@ -145,24 +144,21 @@ void loop()
           restoreflag = false;
           setPulses(OldPulses);
         }
-        volume = processencoder(VOLMIN, VOLMAX, getPulses());
-
-        Serial.print("Master Vol. ");
+        volume = processencoder(VOLMIN, VOLMAX, getPulses()); // dB
+        Serial.print(F(" Master Vol. : "));
         Serial.print(volume, 1);
-        Serial.println("dB");
-
-        volume = pow(10, volume/20);    // From dB to linear conversion --> DSP takes only linear values in 5.28 fixed point format!!!
-        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, volume);
+        Serial.println(F("dB"));
+        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20)); // Call Aida DSP API with linear value from dB
       }
       else
       {
-        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, volume);
+        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20)); // To re-enable volume after mute switch off
       }			
     }
     else if(mute == ON)
     {
       MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, 0.00);
-      Serial.println("mute on");
+      Serial.println(" mute on");
     }
     if(submenu==ON)
     {
@@ -177,37 +173,35 @@ void loop()
       switch(preset)
       {
       case 1:
-        Serial.println(" Bypass...");
-        mux(DEVICE_ADDR_7bit, Nx2_1, 1, 3);
+        Serial.println(F(" Distortion Off..."));
+        mux(DEVICE_ADDR_7bit, Mux, 1, 3);
         break;
       case 2:
-        Serial.println(" Spatializer 1...");
-        mux(DEVICE_ADDR_7bit, Nx2_1, 2, 3);
+        Serial.println(F(" Hard Clip..."));
+        hard_clip(DEVICE_ADDR_7bit, HardClip1, 0.5, -0.5);
+        mux(DEVICE_ADDR_7bit, Mux, 2, 3);
         break;
       case 3:
-	Serial.println(" Spatializer 2...");
-        mux(DEVICE_ADDR_7bit, Nx2_1, 3, 3);
+        Serial.println(F(" Soft Clip..."));
+        soft_clip(DEVICE_ADDR_7bit, SoftClip1, 0.3);
+        mux(DEVICE_ADDR_7bit, Mux, 3, 3);
         break;
       case 4:
-	Serial.println(" Bypass...");
-        mux(DEVICE_ADDR_7bit, Nx2_1, 1, 3);
+        Serial.println(F(" Name this effect..."));
+        // Do something call Aida DSP API
         break;
       }
-
-      Serial.write('\n');
-      Serial.print("    Selected preset: ");
+      Serial.println("");
+      Serial.print(F("    Selected preset: "));
       Serial.println(preset, DEC);
-
     }
     else if(submenu==OFF)
     {
-      Serial.write('\n');
-      Serial.println("    Submenu OFF");
+      Serial.println("");
+      Serial.println(F("    Submenu OFF"));
     }
-
-    prevtime = time;
+    prevtimec = timec;
   } 
-
 } // End void loop
 
 void spettacolino()
@@ -237,9 +231,9 @@ void spettacolino()
 void clearAndHome(void)
 {
   Serial.write(0x1b); // ESC
-  Serial.print("[2J"); // clear screen
+  Serial.print(F("[2J")); // clear screen
   Serial.write(0x1b); // ESC
-  Serial.print("[H"); // cursor to home
+  Serial.print(F("[H")); // cursor to home
 }
 
 

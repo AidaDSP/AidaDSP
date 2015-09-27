@@ -1,8 +1,7 @@
 /*
- AIDA Tutorial_4 Sketch
+ AIDA Tutorial_7 Sketch
  	
- This sketch controls a mux to switch between HP BP LP outputs of 
- a State Variable Filter using the 
+ This sketch controls a multiple signal generator (synthesizer) with average/rms/peak/raw volume readback using the 
  structure of Template1.
  This sketch was written for Stellaris/TivaC Launchpad, and will not work on other boards.
  	
@@ -42,7 +41,7 @@
 #define OFF 0
 
 // FUNCTION PROTOTYPES
-void spettacolino(void);
+void spettacolino();
 void clearAndHome(void);
 
 // GLOBAL VARIABLES
@@ -61,6 +60,10 @@ uint16_t PotValue = 0;
 uint32_t timec=0, prevtimec=0;
 
 float volume = 0.00;
+float readback1 = 0.00;
+float readback2 = 0.00;
+float readback3 = 0.00;
+float readback4 = 0.00;
 
 void setup()
 {
@@ -73,9 +76,9 @@ void setup()
   // open the USBSerial port
   Serial.begin(115200);
   clearAndHome();
-  Serial.println(F("Aida DSP control with LAUNCHPAD")); // Welcome message
+  Serial.println(F("Aida DSP control with STELLARIS")); // Welcome message
   Serial.print(F("0x"));
-  Serial.println((DEVICE_ADDR_7bit<<1)&~0x01, HEX);
+  Serial.println((DEVICE_ADDR_7bit<<1)&~0x01, HEX); // Write DSP I2C address
 
   // DSP board
   InitAida();	// Initialize DSP board
@@ -84,7 +87,6 @@ void setup()
   program_download();    // Here we load program, parameters and hardware configuration to DSP
   delay(20);
   spettacolino();
-  StateVariable(DEVICE_ADDR_7bit, StateVarFilter1, 1000.0, 0.71);  // Here write settings for State Variable Filter Cell
 }
 
 void loop()
@@ -122,19 +124,35 @@ void loop()
   }
 
   timec = millis();
-  if(timec-prevtimec >= 1000)  // Here we manage control interface every second
+  if(timec-prevtimec >= 750)  // Here we manage control interface every 750ms
   {
     clearAndHome();    // !!!Warning use with real terminal emulation program
     Serial.println(F("********************************"));
     Serial.println(F("*    User control interface    *"));
-    Serial.println(F("*    AIDA Tutorial_4 Sketch    *"));
+    Serial.println(F("*    AIDA Tutorial_7 Sketch    *"));
     Serial.println(F("********************************"));
     Serial.println(F("Press button rapidly to switch mute on/off,"));
     Serial.println(F("press button for 1 sec to enter submenu."));
     Serial.println("");
 
+    readBack(DEVICE_ADDR_7bit, ReadBackAlg1, 0x0312, &readback1); // running average
+    readBack(DEVICE_ADDR_7bit, ReadBackAlg2, 0x031E, &readback2); // rms
+    readBack(DEVICE_ADDR_7bit, ReadBackAlg3, 0x032A, &readback3); // peak
+    readBack(DEVICE_ADDR_7bit, ReadBackAlg4, 0x0336, &readback4); // raw abs
+    
+    Serial.print(F(" Running Avg. : ")); // Print linear values (max +/-1.00) for readback values
+    Serial.println(readback1, 1);
+    Serial.print(F(" RMS : "));
+    Serial.println(readback2, 1);
+    Serial.print(F(" Peak : "));
+    Serial.println(readback3, 1);
+    Serial.print(F(" Raw abs : "));
+    Serial.println(readback4, 1);
+
     Serial.print(F(" Encoder pulses: "));
     Serial.println(getPulses(), DEC);
+    Serial.println("");
+    Serial.println("");
     if(mute == OFF)
     {
       if(submenu == OFF)
@@ -148,16 +166,16 @@ void loop()
         Serial.print(F(" Master Vol. : "));
         Serial.print(volume, 1);
         Serial.println(F("dB"));
-        MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20)); // Call Aida DSP API with linear value from dB
+        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20)); // Call Aida DSP API with linear value from dB
       }
       else
       {
-        MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20)); // To re-enable volume after mute switch off
+        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20)); // To re-enable volume after mute switch off
       }			
     }
     else if(mute == ON)
     {
-      MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolume, 0.00);
+      MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, 0.00);
       Serial.println(" mute on");
     }
     if(submenu==ON)
@@ -168,24 +186,33 @@ void loop()
         OldPulses = getPulses();  // Save actual Pulses for restoring when exit menu
         setPulses(16);  // Restart from a known position
       }
-      preset = (uint8_t)selectorwithencoder(getPulses(), 2);  // Use the encoder as a selector
+      preset = (uint8_t)selectorwithencoder(getPulses(), 3);  // Use the encoder as a selector
 
       switch(preset)
       {
       case 1:
-        mux(DEVICE_ADDR_7bit, Mux, 1, 3); // Select 1 of 3 channels multiplexer
-        Serial.println(F(" State Variable Filter LP..."));
+        Serial.println(F(" Sawtooth..."));
+        mux(DEVICE_ADDR_7bit, Selector, 1, 4);
+        mux(DEVICE_ADDR_7bit, Mux, 1, 2);
         break;
       case 2:
-        mux(DEVICE_ADDR_7bit, Mux, 2, 3); // Select 2 of 3 channels multiplexer
-        Serial.println(F(" State Variable Filter BP..."));
+        Serial.println(F(" Sine..."));
+        mux(DEVICE_ADDR_7bit, Selector, 2, 4);
+        mux(DEVICE_ADDR_7bit, Mux, 1, 2);
         break;
       case 3:
-        mux(DEVICE_ADDR_7bit, Mux, 3, 3); // Select 3 of 3 channels multiplexer
-        Serial.println(F(" State Variable Filter HP..."));
+        Serial.println(F(" Square..."));
+        mux(DEVICE_ADDR_7bit, Selector, 3, 4);
+        mux(DEVICE_ADDR_7bit, Mux, 1, 2);
         break;
       case 4:
-        Serial.println(F(" Name this preset..."));
+        Serial.println(F(" Triangle..."));
+        mux(DEVICE_ADDR_7bit, Selector, 4, 4);
+        mux(DEVICE_ADDR_7bit, Mux, 1, 2);
+        break;
+      case 5:
+        Serial.println(F(" Audio In..."));
+        mux(DEVICE_ADDR_7bit, Mux, 2, 2);
         break;
       }
       Serial.println("");

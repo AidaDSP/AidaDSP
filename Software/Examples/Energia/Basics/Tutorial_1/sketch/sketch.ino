@@ -150,7 +150,7 @@ void loop()
       }
       else
       {
-        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, volume); // To re-enable volume after mute switch off
+        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20)); // To re-enable volume after mute switch off
       }			
     }
     else if(mute == ON)
