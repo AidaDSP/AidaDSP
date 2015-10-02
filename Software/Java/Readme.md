@@ -11,7 +11,7 @@ this is a command line utility for Windows and Linux which
 you can use to "send" a Sigma Studio .xml exported file 
 to an Arduino board listening on COM port
 Link: [AidaDSPLoader.jar](../Java/AidaDSPLoader/bin) 
-Sintax: AidaDSPLoader [dir] [filename] [comport]
-Example: AidaDSPLoader C:\AidaDSP myfile COM2
+* Sintax: AidaDSPLoader [dir] [filename] [comport]
+* Example: AidaDSPLoader C:\AidaDSP myfile COM2
 
 
