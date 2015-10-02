@@ -56,7 +56,7 @@
 #define FREQMIN 0.1f // Hz
 #define FREQMAX 35.0f // Hz
 #define BPMMIN 5.0f
-#define BPMMAX 160.0f
+#define BPMMAX 260.0f
 //#define FREQMIN 1000.0f // Hz
 //#define FREQMAX 10000.0f // Hz
 #define COLORMIN -15.00f // dB
@@ -79,10 +79,13 @@
 // FUNCTION PROTOTYPES
 void spettacolino();
 void clearAndHome(void);
-void mix(uint8_t percent);
+void setBypass(void);
+void setMix(uint8_t);
 void setMode(void);
 void setFrequency(void);
 void setLfo(void);
+void setColor(float);
+void setVolume(float);
 void depth(void);
 void print_menu_putty(void);
 void print_menu_lcd(void);
@@ -93,13 +96,12 @@ int32_t OldPulses = 0;
 
 // UI
 uint8_t bypass = OFF;
-uint8_t oldbypass = OFF;
 uint8_t func_counter = 0;
 uint8_t old_func_counter = 0;
 uint8_t mode = 1;
 uint8_t lfotype = 1;
 uint8_t restore = 1;
-uint8_t mixvalue = 0;
+uint8_t mix = 0;
 uint16_t readbackcount = 0;
 int32_t freqpulses = 198;
 int32_t bpmpulses = 213;
@@ -112,7 +114,6 @@ int32_t depthpulses = 0;
 uint32_t timec=0, prevtimec=0;
 
 float volumedB = 0.00;
-float volume = 0.00;
 float frequency = 0.00;
 float bpm = 0.00;
 float colorvalue = 0.00;
@@ -122,24 +123,20 @@ float readbackmin = 0.00;
 float readbackmax = 0.00;
 equalizer_t color;
 
-float pot1 = 0.00;
+uint16_t pot1 = 0.00;
+uint16_t pot2 = 0.00;
+uint16_t pot3 = 0.00;
+uint16_t pot4 = 0.00;
 
 // Push Encoder
 uint8_t push_e_count = 0;
 uint8_t push_e_function = 0;
+
 // Push 1
-uint32_t push1_start = 0;
-uint32_t push1_delta = 0;
-uint8_t push1_pressed = 0;
-float bpm1 = 0.00;
+uint8_t push_1_lock = 0;
+
 // Push 2
 uint8_t push_2_lock = 0;
-
-// Led1 
-uint32_t delta_led1 = 0;
-uint8_t status_led1 = 0;
-
-uint8_t state = 0;
 
 // Configure pins for LCD display
 LiquidCrystal lcd(17, 16, 15, 14, 6, 7); // RS, EN, D4, D5, D6, D7
@@ -154,7 +151,7 @@ void setup()
   pinMode(LED_2, OUTPUT);
   digitalWrite(LED_2, HIGH);
   pinMode(PUSH_1, INPUT_PULLUP);
-  attachInterrupt(5, push1_isr, FALLING); 
+  //attachInterrupt(5, push1_isr, FALLING); 
   pinMode(PUSH_2, INPUT_PULLUP);
   //attachInterrupt(4, push2_isr, FALLING); 
 
@@ -171,15 +168,6 @@ void setup()
   lcd.print(F("Aida DSP Box")); // Print a message to the LCD.
   lcd.setCursor(0, 1);
   lcd.print(F("Tremolo V0.1"));
-
-
-  while(1)
-  {
-    state ^= 1;
-    digitalWrite(LED_1, state);
-    digitalWrite(LED_2, state);
-    delay(250);
-  }
 
   // DSP board
   InitAida();	// Initialize DSP board
@@ -247,6 +235,25 @@ void loop()
     bypass ^=1; 
   }
   
+  if(digitalRead(PUSH_1)==LOW)
+  {
+    delay(50);  // debounce
+    if(digitalRead(PUSH_1)==LOW)
+    {
+      if(push_1_lock != 1)
+      {
+        push_1_lock = 1;
+        mode--;
+        mode ^= 1; 
+        mode++; // Toggle between 1 and 2
+      }
+    }
+  }
+  else
+  {
+    push_1_lock = 0;
+  }
+  
   if(digitalRead(PUSH_2)==LOW)
   {
     delay(50);  // debounce
@@ -263,9 +270,9 @@ void loop()
   {
     push_2_lock = 0;
   }
-
+  
   timec = millis();
-  if(timec-prevtimec >= 1000)  // Here we manage control interface every second
+  if(timec-prevtimec >= 250)  // Here we manage control interface every 250ms
   { 
     clearAndHome();    // !!!Warning use with real terminal emulation program
     Serial.println(F("********************************"));
@@ -291,24 +298,26 @@ void loop()
     Serial.println(readbackmin, 2);
     Serial.println();*/
     
-    pot1 = analogRead(POT1);
-    pot1 = processpot(VOLMIN, VOLMAX, pot1);
+    setMode(); // Using PUSH_1 and LED_1
+    setBypass(); // Using PUSH_2 and LED_2
     
-    if(oldbypass != bypass)
-    {
-      if(bypass == ON)
-      {
-        mux(DEVICE_ADDR_7bit, BypassSelector, 2, 2); // Bypass 
-        digitalWrite(LED_2, HIGH);
-      }
-      else
-      {
-        mux(DEVICE_ADDR_7bit, BypassSelector, 1, 2); // Fx
-        digitalWrite(LED_2, LOW);
-      }
-      oldbypass = bypass;
-    }
-
+    pot1 = analogRead(POT1);
+    bpm = processpot(BPMMIN, BPMMAX, pot1);
+    frequency = bpm / 60.0; // Bpm to frequency conversion
+    setFrequency();
+    
+    pot2 = analogRead(POT2);
+    mix = (uint8_t)processpot(0.0, 100.0, pot2);
+    setMix(mix);
+    
+    pot3 = analogRead(POT3);
+    colorvalue = processpot(COLORMIN, COLORMAX, pot3);
+    setColor(colorvalue);
+    
+    pot4 = analogRead(POT4);
+    volumedB = processpot(VOLMIN, VOLMAX, pot4);
+    setVolume(volumedB);
+    
     if(old_func_counter != func_counter)
     {
       restore = 1;
@@ -317,8 +326,7 @@ void loop()
     switch(func_counter)
     {
     case 0: // Frequency
-    
-      if(restore)
+      /*if(restore)
       {
         restore = 0;
         //setPulses(freqpulses);
@@ -331,6 +339,7 @@ void loop()
       bpm = processencoder(BPMMIN, BPMMAX, bpmpulses);
       frequency = bpm / 60.0;
       setFrequency();
+      */
       break;
     case 1: // LFO type
       if(restore)
@@ -348,17 +357,17 @@ void loop()
       setLfo();
       break;
     case 2: // Mode
-      if(restore)
+      /*if(restore)
       {
         restore = 0;
         setPulses(modepulses);
       }
       modepulses = getPulses();
       mode = selectorwithencoder(modepulses, 2); 
-      setMode();
+      setMode();*/
       break;
     case 3: // Color
-      if(restore)
+      /*if(restore)
       {
         restore = 0;
         setPulses(colorpulses);
@@ -366,14 +375,10 @@ void loop()
       set_regulation_precision(OFF); // Rough regulation
       colorpulses = getPulses();
       colorvalue = processencoder(COLORMIN, COLORMAX, colorpulses);
-      color.S = 0.70;
-      color.f0 = 1200.00;
-      color.boost = colorvalue;
-      color.type = HighShelf;
-      EQ2ndOrd(DEVICE_ADDR_7bit, Color, &color);
+      setColor(colorvalue);*/
       break;
     case 4: // Volume
-      if(restore)
+      /*if(restore)
       {
         restore = 0;
         setPulses(volumepulses);
@@ -381,19 +386,18 @@ void loop()
       set_regulation_precision(OFF); // Rough regulation
       volumepulses = getPulses();
       volumedB = processencoder(VOLMIN, VOLMAX, volumepulses);
-      volume = pow(10, volumedB/20);    // From dB to linear conversion --> DSP takes only linear values in 5.28 fixed point format!!!
-      MasterVolumeMono(DEVICE_ADDR_7bit, MasterVol, volume);
+      setVolume(volumedB);*/
       break;  
     case 5: // Mix
-      if(restore)
+      /*if(restore)
       {
         restore = 0;
         setPulses(mixpulses);
       }
       set_regulation_precision(OFF); // Rough regulation
       mixpulses = getPulses();
-      mixvalue = (uint8_t)processencoder(0, 100, mixpulses);
-      mix(mixvalue);
+      mix = (uint8_t)processencoder(0, 100, mixpulses);
+      setMix(mix);*/
       break;
     case 6: // Depth
       if(restore)
@@ -401,7 +405,7 @@ void loop()
         restore = 0;
         setPulses(depthpulses);
       } 
-      set_regulation_precision(OFF); // Rough regulation
+      //set_regulation_precision(OFF); // Rough regulation
       depthpulses = getPulses();
       depthvalue = processencoder(-1.0, 1.0, depthpulses);
       depth(); 
@@ -414,18 +418,6 @@ void loop()
 
     prevtimec = timec;
   } // End if 1000ms tick
-  
-  // LED1 (Tap Tempo) Blink
-  /*if(push1_delta!=0)
-  {
-    delta_led1 = millis()-delta_led1; 
-    if(delta_led1 == push1_delta)
-    {
-      status_led1 ^= 1;
-      digitalWrite(LED_1, status_led1);
-    }
-  } */
-  
 } // End void loop
 
 void spettacolino()
@@ -436,10 +428,14 @@ void spettacolino()
   for(i=0;i<6;i++)
   {
     statusc ^= 1;
-    pinMode(PIN_LED, statusc);
+    digitalWrite(PIN_LED, statusc);
+    digitalWrite(LED_1, statusc);
+    digitalWrite(LED_2, statusc);
     delay(250);
   }
-  pinMode(PIN_LED, HIGH);
+  digitalWrite(PIN_LED, HIGH);
+  digitalWrite(LED_1, HIGH);
+  digitalWrite(LED_2, HIGH);
 }
 
 void clearAndHome(void)
@@ -616,25 +612,40 @@ void check_config(void)
   }
 }
 
-void mix(uint8_t percent)
+void setMix(uint8_t percent)
 {
-  float value = percent/100.00;
-
-  // MIX
-  AIDA_SAFELOAD_WRITE_VALUE(DEVICE_ADDR_7bit, Mix, false, value);  // Dry	 
-  AIDA_SAFELOAD_WRITE_VALUE(DEVICE_ADDR_7bit, Mix+1, true, 1.00-value);   // Wet
+  static uint8_t oldpercent = 0;
+  float value = 0.00;
+  
+  if(oldpercent != percent)
+  {
+    if(percent>100)
+      percent = 100;
+    value = percent/100.00;
+  
+    // MIX
+    AIDA_SAFELOAD_WRITE_VALUE(DEVICE_ADDR_7bit, Mix, false, value);  // Dry	 
+    AIDA_SAFELOAD_WRITE_VALUE(DEVICE_ADDR_7bit, Mix+1, true, 1.00-value);   // Wet
+  }
 }
 
 void setFrequency(void)
 {
-  triangle_source(DEVICE_ADDR_7bit, Triangle1, frequency*2.00);
-  delay(1);
-  sine_source(DEVICE_ADDR_7bit, Tone1, frequency);
-  delay(1);
-  sawtooth_source(DEVICE_ADDR_7bit, Sawtooth1, frequency);
-  delay(1);
-  square_source(DEVICE_ADDR_7bit, Square1, frequency);
-  delay(1);
+  static float oldfrequency = 0.00;
+  
+  if(frequency != oldfrequency) // Freq change, update all oscillators
+  {
+    triangle_source(DEVICE_ADDR_7bit, Triangle1, frequency*2.00);
+    delayMicroseconds(10);
+    sine_source(DEVICE_ADDR_7bit, Tone1, frequency);
+    delayMicroseconds(10);
+    sawtooth_source(DEVICE_ADDR_7bit, Sawtooth1, frequency);
+    delayMicroseconds(10);
+    square_source(DEVICE_ADDR_7bit, Square1, frequency);
+    delayMicroseconds(10);
+    
+    oldfrequency = frequency;
+  }
   /* 
   switch(lfotype)
   {
@@ -670,7 +681,12 @@ void setLfo(void)
 
 void setMode(void)
 {
-  static uint8_t oldmode = 0.00;
+  static uint8_t oldmode = 0;
+  
+  if(mode>1)
+    digitalWrite(LED_1, LOW); // Harmonic or Opto modes LED_1 On
+  else
+    digitalWrite(LED_1, HIGH); // Normal mode LED_1 Off
   
   if(oldmode != mode)
   {
@@ -792,7 +808,7 @@ void print_menu_putty(void)
   if(func_counter==5)
     Serial.print(F("    "));
   Serial.print(F("Mix: "));
-  Serial.print(mixvalue, DEC);
+  Serial.print(mix, DEC);
   Serial.println(F(" %"));
   if(func_counter==6)
     Serial.print(F("    "));
@@ -802,9 +818,6 @@ void print_menu_putty(void)
   Serial.write('\n');
   Serial.print(F("Active item: "));
   Serial.println(func_counter, DEC);
-  
-  Serial.print(F("BPM1: ")); // !!! Debug
-  Serial.println(bpm1, 2); // !!! Debug
 }
 
 void print_menu_lcd(void)
@@ -858,7 +871,7 @@ void print_menu_lcd(void)
         break;
       case 5:
         lcd.print(F("Mix: "));
-        lcd.print(mixvalue, DEC);
+        lcd.print(mix, DEC);
         lcd.print(F(" %"));
         break;
       case 6:
@@ -869,33 +882,61 @@ void print_menu_lcd(void)
   }
 }
 
-void push1_isr(void)
+void setBypass(void)
 {
-  if(push1_pressed)
+  static uint8_t oldbypass = OFF;
+  
+  if(oldbypass != bypass)
   {
-    push1_delta = millis() - push1_start;
-    if(push1_delta < 50)
+    if(bypass == ON)
     {
-      // Do not change current bpm
-      push1_delta = 0.0;
+      mux(DEVICE_ADDR_7bit, BypassSelector, 2, 2); // Bypass 
+      digitalWrite(LED_2, HIGH);
     }
-    else if(push1_delta > 5000)
+    else
     {
-      // Do not change current bpm
-      push1_pressed = 0;
+      mux(DEVICE_ADDR_7bit, BypassSelector, 1, 2); // Fx
+      digitalWrite(LED_2, LOW);
     }
-    else // Valid range
-    {
-      //bpm1 = 60.000f / push1_delta;
-      bpm1 = push1_delta;
-    }
-  }
-  else
-  {
-    push1_start = millis();
-    push1_pressed = 1;
+    oldbypass = bypass;
   }
 }
+
+void setColor(float boost)
+{
+  static float oldboost = 0.00;
+  
+  if(boost != oldboost)
+  {
+    color.S = 0.70;
+    color.f0 = 1200.00;
+    color.boost = boost;
+    color.type = HighShelf;
+    EQ2ndOrd(DEVICE_ADDR_7bit, Color, &color);
+    
+    oldboost = boost;
+  }
+}
+
+void setVolume(float boostdb)
+{
+  static float oldboostdb = 0.00;
+  float boostlinear = 0.00;
+  
+  if(boostdb != oldboostdb)
+  {
+    
+    boostlinear = pow(10, boostdb/20.0);
+    MasterVolumeMono(DEVICE_ADDR_7bit, MasterVol, boostlinear);
+    
+    oldboostdb = boostdb;
+  }
+}
+
+/*void push1_isr(void)
+{
+  
+}*/
 
 /*void push2_isr(void)
 {
