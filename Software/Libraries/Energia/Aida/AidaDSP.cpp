@@ -19,16 +19,14 @@
  
 #include "AidaDSP.h"
 
-
-
-
-
-
 #define FULLRANGEVAL 4096
 #define MIDDLEVAL (4096.00/2)
 
-
+#ifdef ENC_RES_X4
 #define N_ENC 24*4 // We manage the quadrature encoder with x4 resolution so 24*4 every turn.
+#else
+#define N_ENC 24
+#endif
 #define MAX_PULSES_ROUGH  N_ENC*1
 //#define MAX_PULSES_FINE  N_ENC*10
 #define MAX_PULSES_FINE  N_ENC*25
@@ -148,7 +146,7 @@ uint16_t selectorwithpot(uint16_t potval, uint8_t bits)
   return result;
 }
 
-uint8_t isinrange(uint16_t value, uint16_t reference, uint16_t threshold)
+uint8_t isinrange(int16_t value, int16_t reference, int16_t threshold)
 {
   if(value < (reference+threshold) && value > (reference-threshold))
   {
@@ -163,8 +161,17 @@ void InitAida(void)
   pinMode(ENC_PUSH, INPUT_PULLUP);
   pinMode(ENCA, INPUT_PULLUP);
   pinMode(ENCB, INPUT_PULLUP);
-  attachInterrupt(ENCA, enc_manager, CHANGE); // Interrupt is fired whenever ENC changes state
-  attachInterrupt(ENCB, enc_manager, CHANGE); // Both channels, rising-falling for x4 resolution 360°/24*4
+  #ifdef ENC_RES_X1
+    attachInterrupt(ENCA, enc_manager, RISING);  
+  #else 
+    #ifdef ENC_RES_X2
+      attachInterrupt(ENCB, enc_manager, RISING);  
+      attachInterrupt(ENCA, enc_manager, RISING);  
+    #else
+      attachInterrupt(ENCB, enc_manager, CHANGE);  
+      attachInterrupt(ENCA, enc_manager, CHANGE);  
+    #endif
+  #endif
   
   pinMode(SBOOT, OUTPUT);
   pinMode(RESET, OUTPUT);
@@ -188,21 +195,29 @@ void enc_manager(void)
   prev_state = curr_state;
   curr_state = (chA<<1 | chB);		// 2-bit state
   
+  #ifdef ENC_RES_X1
+    if(chB == 1 && chA == 0)
+      Pulses--;
+    else
+      Pulses++;
+  #endif
+  #ifdef ENC_RES_X4
   //Entered a new valid state.
-  if (((curr_state ^ prev_state) != INVALID) && (curr_state != prev_state))
-  {
+    if (((curr_state ^ prev_state) != INVALID) && (curr_state != prev_state))
+    {
       //2 bit state. Right hand bit of prev XOR left hand bit of current
       //gives 0 if clockwise rotation and 1 if counter clockwise rotation.
       change = (prev_state & PREV_MASK) ^ ((curr_state & CURR_MASK) >> 1);
       if (change == 0)
-          Pulses++;
+        Pulses++;
       else
-          Pulses--;
-  }
-  else
-  {
+        Pulses--;
+    }
+    else
+    {
       // Error
-  } 
+    }
+  #endif  
 }
 
 // Methods for get/set encoder's pulses value

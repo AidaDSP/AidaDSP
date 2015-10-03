@@ -52,16 +52,14 @@ inline int32_t FIXED_Mul(int32_t a, int32_t b)  // This function has to be decla
 #define SBOOT 12
 #define RESET 11
 
-#define ENCB 3
-#define ENCA 5
-#define PUSH1 2
+#define ENCB 2
+#define ENCA 3
+#define PUSH1 4
 #define ENC_PUSH PUSH1
 
-#ifdef __AVR__ 
-#define ENC_RES_X1
-#else
 #define ENC_RES_X4
-#endif 
+//define ENC_RES_X1
+//define ENC_RES_X2 // Not managed yet
 
 #define POT4 A3
 #define POT3 A2
@@ -131,7 +129,7 @@ float processencoder(float minval, float maxval, int32_t pulses);
 uint16_t selectorwithencoder(int32_t pulses, uint8_t bits);
 float processpot(float minval, float maxval, uint16_t potvalue);
 uint16_t selectorwithpot(uint16_t potval, uint8_t bits);
-uint8_t isinrange(uint16_t value, uint16_t reference, uint16_t threshold);
+uint8_t isinrange(int16_t value, int16_t reference, int16_t threshold);
 void print_fixed_number(int32_t fixedval);
 
 // Setup

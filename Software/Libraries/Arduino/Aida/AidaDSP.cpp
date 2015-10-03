@@ -151,7 +151,7 @@ uint16_t selectorwithpot(uint16_t potval, uint8_t bits)
   return result;
 }
 
-uint8_t isinrange(uint16_t value, uint16_t reference, uint16_t threshold)
+uint8_t isinrange(int16_t value, int16_t reference, int16_t threshold)
 {
   if(value < (reference+threshold) && value > (reference-threshold))
   {
@@ -164,16 +164,35 @@ uint8_t isinrange(uint16_t value, uint16_t reference, uint16_t threshold)
 void InitAida(void)
 {
   #ifdef __AVR__
-  pinMode(ENC_PUSH, INPUT); // 3.3v pull-up provided on Aida DSP board
-  pinMode(ENCA, INPUT);
-  pinMode(ENCB, INPUT);
-  attachInterrupt(1, enc_manager, RISING);  // Arduino Mega: interrupts are on fixed pins only
+	  pinMode(ENC_PUSH, INPUT); // 3.3v pull-up provided on Aida DSP board
+	  pinMode(ENCA, INPUT);
+	  pinMode(ENCB, INPUT);
+	  #ifdef ENC_RES_X1
+      attachInterrupt(1, enc_manager, RISING);  // Arduino Mega: interrupts are on fixed pins only (ENCA, Pin 3)
+	  #else 
+      #ifdef ENC_RES_X2
+        attachInterrupt(0, enc_manager, RISING);  // Arduino Mega: interrupts are on fixed pins only (ENCB, Pin 2)
+        attachInterrupt(1, enc_manager, RISING);  // Arduino Mega: interrupts are on fixed pins only (ENCA, Pin 3)
+      #else
+        attachInterrupt(0, enc_manager, CHANGE);  // Arduino Mega: interrupts are on fixed pins only (ENCB, Pin 2)
+        attachInterrupt(1, enc_manager, CHANGE);  // Arduino Mega: interrupts are on fixed pins only (ENCA, Pin 3)
+      #endif
+	  #endif
   #else
-  pinMode(ENC_PUSH, INPUT_PULLUP);
-  pinMode(ENCA, INPUT_PULLUP);
-  pinMode(ENCB, INPUT_PULLUP);
-  attachInterrupt(ENCA, enc_manager, CHANGE); // Interrupt is fired whenever ENC changes state
-  attachInterrupt(ENCB, enc_manager, CHANGE); // Both channels, rising-falling for x4 resolution 360°/24*4
+    pinMode(ENC_PUSH, INPUT_PULLUP);
+    pinMode(ENCA, INPUT_PULLUP);
+    pinMode(ENCB, INPUT_PULLUP);
+    #ifdef ENC_RES_X1
+      attachInterrupt(ENCA, enc_manager, RISING); // Interrupt is fired whenever ENC changes state
+    #else
+      #ifdef ENC_RES_X2
+        attachInterrupt(ENCA, enc_manager, RISING); // Interrupt is fired whenever ENC changes state
+        attachInterrupt(ENCB, enc_manager, RISING); // Both channels, rising for x2 resolution 360°/24*2
+      #else
+        attachInterrupt(ENCA, enc_manager, CHANGE); // Interrupt is fired whenever ENC changes state
+        attachInterrupt(ENCB, enc_manager, CHANGE); // Both channels, rising-falling for x4 resolution 360°/24*4
+      #endif
+    #endif
   #endif
   
   pinMode(SBOOT, OUTPUT);
@@ -201,26 +220,26 @@ void enc_manager(void)
   
   //Entered a new valid state.
   #ifdef ENC_RES_X1
-  if(chB == 1 && chA == 0)
-	Pulses--;
-  else
-	Pulses++;
+    if(chB == 1 && chA == 0)
+      Pulses--;
+    else
+      Pulses++;
   #endif
   #ifdef ENC_RES_X4
-  if (((curr_state ^ prev_state) != INVALID) && (curr_state != prev_state))
-  {
+    if (((curr_state ^ prev_state) != INVALID) && (curr_state != prev_state))
+    {
       //2 bit state. Right hand bit of prev XOR left hand bit of current
       //gives 0 if clockwise rotation and 1 if counter clockwise rotation.
       change = (prev_state & PREV_MASK) ^ ((curr_state & CURR_MASK) >> 1);
       if (change == 0)
-          Pulses--;
+        Pulses--;
       else
-          Pulses++;
-  }
-  else
-  {
+        Pulses++;
+    }
+    else
+    {
       // Error
-  }
+    }
   #endif  
 }
 
@@ -719,7 +738,7 @@ void CompressorPeak(uint8_t dspAddress, uint16_t address, compressor_t* compress
 void readBack(uint8_t dspAddress, uint16_t address, uint16_t capturecount, float *value){
 
   uint8_t buf[3];
-  int32_t word32;
+  int32_t word32 = 0;
 
   buf[0] = capturecount >> 8;
   buf[1] = (uint8_t)capturecount & 0xFF;
@@ -732,7 +751,7 @@ void readBack(uint8_t dspAddress, uint16_t address, uint16_t capturecount, float
   word32 = (buf[0]<<24 | buf[1]<<16 | buf[2]<<8)&0xFFFFFF00; // MSB first, convert to 5.27 format
 
   if(word32==0)     // Do not calculate log of 0! Unless you want to deal with huge negative numbers!
-    word32 = 1;  // Absolute minimum, when word32 value is 0x01, value = 1.49011612e-8
+    word32 = 1; // Absolute minimum, when word32 value is 0x01, value = 1.49011612e-8
 
   *value = ((float)word32/(1 << 27)); // I'm converting to 5.27 to maintain sign
 }
@@ -809,8 +828,7 @@ void triangle_source(uint8_t dspAddress, uint16_t address, float frequency)
 	AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, 1.00);
 	AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, 0.00);
 	AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, true, -1.00);
-	//Delay(1);	// ???Necessary???
-	 	 
+	//Delay(1);	// ???Necessary??? 	 
 	AIDA_SAFELOAD_WRITE_REGISTER(dspAddress, address++, false, buffer);		 // mask
 	AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, value);	 // increment
 	AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, 1.0);	 	 // ison

@@ -1,18 +1,18 @@
 /*
  AIDA Tutorial_2 Sketch
  	
- This sketch controls a digital master volume algorithm with
- Aida DSP.
- This sketch was written for the Arduino2, and will not work on other boards.
+ This sketch controls a stereo pair of HP filters and LP filters of the 1st order 
+ using the structure of Template2.  
+ This sketch was written for Arduino, and will not work on other boards.
  	
  The circuit:
  
  Audio:
  * Input range 2.0Vrms (5.66Vpp, 8.23dBu)
- * Output range 0.9Vrms (2.5Vpp, 1.30dBu) 
+ * Output range 0.9Vrms (0-2.5Vpp, 1.30dBu) 
  
  PC:
- * Please connect with PuTTY on Arduino2 USB Serial with a PC for a minimal user interface
+ * Please connect with PuTTY on Arduino USB Serial with a PC for a minimal user interface
  
  NOTE:
  Attenuation Out/In = 2.264, to have out = in you must provide 7.097dB of gain through DSP algorithm
@@ -32,6 +32,9 @@
 #include "AidaDSP.h"
 
 #define EVER (;;)
+
+// DEFINES I/O
+#define PIN_LED  13
 
 // DEFINES USER INTERFACE
 #define VOLMAX 0.00
@@ -61,6 +64,9 @@ uint32_t timec=0, prevtimec=0;
 
 float volume = 0.00;
 
+equalizer_t equalizer1, equalizer2, equalizer3, equalizer4;    // Instantiate resources for left HP left LP right HP right LP
+int tmpaddress = 0;
+
 void setup()
 {
   // put your setup code here, to run once:
@@ -70,8 +76,8 @@ void setup()
   // open the USBSerial port
   Serial.begin(115200);
   clearAndHome();
-  Serial.println("Aida DSP control with ARDUINO2"); // Welcome message
-  Serial.print("0x");
+  Serial.println(F("Aida DSP control with ARDUINO")); // Welcome message
+  Serial.print(F("0x"));
   Serial.println((DEVICE_ADDR_7bit<<1)&~0x01, HEX);
 
   // DSP board
@@ -79,10 +85,8 @@ void setup()
   digitalWrite(RESET, HIGH); // Wake up DSP
   delay(100);  // Start-up delay for DSP
   program_download();    // Here we load program, parameters and hardware configuration to DSP
+  delay(20);
   spettacolino();
-  MasterVolumeStereo(DEVICE_ADDR_7bit, Single1, 0.00);    // With DAC in mute, set volume to 0
-  delay(1);   
-  AIDA_WRITE_REGISTER_BLOCK(DEVICE_ADDR_7bit, CoreRegisterR4Addr, CoreRegisterR4Size, CoreRegisterR4Data);    // Mute DAC Off
 }
 
 void loop()
@@ -123,15 +127,15 @@ void loop()
   if(timec-prevtimec >= 1000)  // Here we manage control interface every second
   {
     clearAndHome();    // !!!Warning use with real terminal emulation program
-    Serial.println("********************************");
-    Serial.println("*    User control interface    *");
-    Serial.println("*    AIDA Tutorial_2 Sketch    *");
-    Serial.println("********************************");
-    Serial.println("Press button rapidly to switch mute on/off,");
-    Serial.println("press button for 1 sec to enter submenu.");
-    Serial.write('\n');
+    Serial.println(F("********************************"));
+    Serial.println(F("*    User control interface    *"));
+    Serial.println(F("*    AIDA Tutorial_2 Sketch    *"));
+    Serial.println(F("********************************"));
+    Serial.println(F("Press button rapidly to switch mute on/off,"));
+    Serial.println(F("press button for 1 sec to enter submenu."));
+    Serial.println("");
 
-    Serial.print("Encoder pulses: ");
+    Serial.print(F(" Encoder pulses: "));
     Serial.println(getPulses(), DEC);
     if(mute == OFF)
     {
@@ -142,24 +146,21 @@ void loop()
           restoreflag = false;
           setPulses(OldPulses);
         }
-        volume = processencoder(VOLMIN, VOLMAX, getPulses());
-
-        Serial.print("Master Vol. ");
+        volume = processencoder(VOLMIN, VOLMAX, getPulses()); // dB
+        Serial.print(F(" Master Vol. : "));
         Serial.print(volume, 1);
-        Serial.println("dB");
-
-        volume = pow(10, volume/20);    // From dB to linear conversion --> DSP takes only linear values in 5.28 fixed point format!!!
-        MasterVolumeStereo(DEVICE_ADDR_7bit, Single1, volume);
+        Serial.println(F("dB"));
+        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20)); // Call Aida DSP API with linear value from dB
       }
       else
       {
-        MasterVolumeStereo(DEVICE_ADDR_7bit, Single1, volume);
+        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20)); // To re-enable volume after mute switch off
       }			
     }
     else if(mute == ON)
     {
-      MasterVolumeStereo(DEVICE_ADDR_7bit, Single1, 0.00);
-      Serial.println("mute on");
+      MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, 0.00);
+      Serial.println(" mute on");
     }
     if(submenu==ON)
     {
@@ -174,33 +175,102 @@ void loop()
       switch(preset)
       {
       case 1:
-        Serial.println(" Name this preset...");
+        Serial.println(F(" Voice Box")); 
+        // Setup HP LP blocks parameters to eliminate bass response,
+        // producing small radio or walkie-talkie effect to a voice or instrument
+        equalizer1.type = Highpass;
+        equalizer2.type = Lowpass;
+        equalizer3.type = Highpass;
+        equalizer4.type = Lowpass;
+
+        equalizer1.f0 = 2500.00; // hp
+        equalizer2.f0 = 8000.00; // lp
+        equalizer3.f0 = 2500.00; // hp
+        equalizer4.f0 = 8000.00; // lp
+
+        equalizer1.gain = 6.00;
+        equalizer2.gain = 6.00;
+        equalizer3.gain = 6.00;
+        equalizer4.gain = 6.00;
+
+        equalizer1.onoff = true;
+        equalizer2.onoff = true;
+        equalizer3.onoff = true;
+        equalizer4.onoff = true;
+
+        // Write them to DSP
+        tmpaddress = Gen1stOrder1;
+        EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer1);
+        tmpaddress+=3;
+        EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer2);
+        tmpaddress+=3;
+        EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer3);
+        tmpaddress+=3;
+        EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer4);
         break;
       case 2:
-		Serial.println(" Name this preset...");
+        Serial.println(F(" Bypass")); // Eliminate the FX shutting down equalizer cells
+        equalizer1.onoff = false;
+        equalizer2.onoff = false;
+        equalizer3.onoff = false;
+        equalizer4.onoff = false;
+
+        // Write them to DSP
+        tmpaddress = Gen1stOrder1;
+        EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer1);
+        tmpaddress+=3;
+        EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer2);
+        tmpaddress+=3;
+        EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer3);
+        tmpaddress+=3;
+        EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer4);
         break;
       case 3:
-		Serial.println(" Name this preset...");
+        Serial.println(F(" Bypass")); // Eliminate the FX shutting down equalizer cells
+        equalizer1.onoff = false;
+        equalizer2.onoff = false;
+        equalizer3.onoff = false;
+        equalizer4.onoff = false;
+
+        // Write them to DSP
+        tmpaddress = Gen1stOrder1;
+        EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer1);
+        tmpaddress+=3;
+        EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer2);
+        tmpaddress+=3;
+        EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer3);
+        tmpaddress+=3;
+        EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer4);
         break;
       case 4:
-		Serial.println(" Name this preset...");
+        Serial.println(F(" Bypass")); // Eliminate the FX shutting down equalizer cells
+        equalizer1.onoff = false;
+        equalizer2.onoff = false;
+        equalizer3.onoff = false;
+        equalizer4.onoff = false;
+
+        // Write them to DSP
+        tmpaddress = Gen1stOrder1;
+        EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer1);
+        tmpaddress+=3;
+        EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer2);
+        tmpaddress+=3;
+        EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer3);
+        tmpaddress+=3;
+        EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer4);
         break;
       }
-
-      Serial.write('\n');
-      Serial.print("    Selected preset: ");
+      Serial.println("");
+      Serial.print(F("    Selected preset: "));
       Serial.println(preset, DEC);
-
     }
     else if(submenu==OFF)
     {
-      Serial.write('\n');
-      Serial.println("    Submenu OFF");
+      Serial.println("");
+      Serial.println(F("    Submenu OFF"));
     }
-
     prevtimec = timec;
-  } 
-
+  }
 } // End void loop
 
 void spettacolino()
@@ -211,7 +281,7 @@ void spettacolino()
   for(i=0;i<6;i++)
   {
     status ^= 1;
-    pinMode(PIN_LED, status);
+    digitalWrite(PIN_LED, status);
     delay(250);
   }
 }
@@ -219,9 +289,8 @@ void spettacolino()
 void clearAndHome(void)
 {
   Serial.write(0x1b); // ESC
-  Serial.print("[2J"); // clear screen
+  Serial.print(F("[2J")); // clear screen
   Serial.write(0x1b); // ESC
-  Serial.print("[H"); // cursor to home
+  Serial.print(F("[H")); // cursor to home
 }
-
 
