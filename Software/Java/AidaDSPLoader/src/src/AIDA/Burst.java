@@ -34,7 +34,7 @@ public class Burst{
     	//CHECKSUM=Byte.parseByte(check);
 		int sum_for_check=0;
 		
-		sum_for_check=sum_for_check+ Integer.decode(nbytes)+(int) ADDR_LSB & 0xFF + (int) ADDR_MSB & 0xFF;  //(int) ADDR_LSB & 0xFF; in order to obtain integer from byte
+		sum_for_check=sum_for_check + NBYTE + ADDR_MSB + ADDR_LSB;  //(int) ADDR_LSB & 0xFF; in order to obtain integer from byte
     	
 		//JOptionPane.showMessageDialog(null, String.valueOf(sum_for_check), "InfoBox: " + "chech", JOptionPane.INFORMATION_MESSAGE);
 		
@@ -55,7 +55,9 @@ public class Burst{
         	//System.out.println(intDataToSend[j]);
         	j++;
         }
-        //now i get only first 8 bit of CHECKSUM
+        // Now I negate chksum and add +1
+        sum_for_check = ~sum_for_check + 1;
+        // Now I get only first 8 bit of CHECKSUM
         CHECKSUM=(byte) (sum_for_check  & 0xFF);
 	}
 	

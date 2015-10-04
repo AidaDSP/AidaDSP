@@ -237,8 +237,9 @@ public class AIDA_RX_TX_COM_Port implements   SerialPortEventListener   {
             output.flush();*/
             
             
-           //now I send the bits
-            for(int j=0; j<32; j++){
+            //now I send the DATA bytes
+            //for(int j=0; j<32; j++){
+            for(int j=0; j<dataTX.NBYTE; j++){
             	 sendBits(dataTX.intDataToSend[j]);
             }
             
@@ -450,8 +451,13 @@ public class AIDA_RX_TX_COM_Port implements   SerialPortEventListener   {
 	        		fw.flush();
 	        		break;
 	        	}
+	        	else if(recievedByte1==NACK[0] && recievedByte2==NACK[1] ){
+	        		fw.write("Il DSP ha risp con NACK il pacchetto numero " + (t+1) + " del burst numero " + number_of_burst_send + " con checksum " + messageToSend.CHECKSUM +  " Tentativo " + (attempt +1) );
+	        		fw.newLine();
+	        		fw.flush();
+	        	}
 	        	else{
-	        		fw.write("Il DSP non ha ricevuto il pacchetto numero " + (t+1) + " del burst numero " + number_of_burst_send + " con checksum " + messageToSend.CHECKSUM +  " Tentativo " + (attempt +1) );
+	        		fw.write("Il DSP non ha risposto al pacchetto numero " + (t+1) + " del burst numero " + number_of_burst_send + " con checksum " + messageToSend.CHECKSUM +  " Tentativo " + (attempt +1) );
 	        		fw.newLine();
 	        		fw.flush();
 	        	}
@@ -549,8 +555,8 @@ public class AIDA_RX_TX_COM_Port implements   SerialPortEventListener   {
 		//fileRead=ARGS[0];
 		/*my_port=ARGS[1];
 		my_port=my_port.toUpperCase();*/
-		my_port="COM6";
-		fileRead="C:\\Users\\Massimo\\Documents\\WorkspaceEclipse\\AidaDSPLoader\\Tremolo.xml";		
+		my_port="COM8";
+		fileRead="C:\\Users\\Massimo\\Documents\\WorkspaceEclipse\\AidaDSPLoader\\Tutorial_2.xml";		
 		
 		long start=System.nanoTime();
 		
