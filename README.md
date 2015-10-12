@@ -28,7 +28,7 @@ If the DSP itself it's interesting, the interface with Arduino gives you outstan
 you can manage communications and I/O with your preferred microcontroller while the DSP is processing audio
 on its own, and you can change DSP algorithms parameters in real-time when you just want to do it.
 
-Audio ethusiasts, this board is for you!!!
+Audio enthusiasts, this board is for you!!!
 
 NOTE: this solution is SUPERIOR to ANY present and future DSP system based on a microcontroller with external Codec.
 Microcontrollers, once very similar to DSPs, are a whole DIFFERENT story. The hardware of this DSP is DEDICATED
