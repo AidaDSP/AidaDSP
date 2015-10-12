@@ -123,10 +123,14 @@ float readbackmin = 0.00;
 float readbackmax = 0.00;
 equalizer_t color;
 
-uint16_t pot1 = 0.00;
-uint16_t pot2 = 0.00;
-uint16_t pot3 = 0.00;
-uint16_t pot4 = 0.00;
+uint16_t pot1 = 0;
+uint16_t oldpot1 = 0;
+uint16_t pot2 = 0;
+uint16_t oldpot2 = 0;
+uint16_t pot3 = 0;
+uint16_t oldpot3 = 0;
+uint16_t pot4 = 0;
+uint16_t oldpot4 = 0;
 
 // Push Encoder
 uint8_t push_e_count = 0;
@@ -158,7 +162,7 @@ void setup()
   // open the USBSerial port
   Serial.begin(115200);
   clearAndHome();
-  Serial.println(F("Aida DSP control with STELLARIS")); // Welcome message
+  Serial.println(F("Aida DSP control with ARDUINO")); // Welcome message
   Serial.print(F("0x"));
   Serial.println((DEVICE_ADDR_7bit<<1)&~0x01, HEX);
   
@@ -305,18 +309,38 @@ void loop()
     bpm = processpot(BPMMIN, BPMMAX, pot1);
     frequency = bpm / 60.0; // Bpm to frequency conversion
     setFrequency();
+    if(!isinrange(pot1, oldpot1, 10))
+    {
+      func_counter=0;
+      oldpot1 = pot1;
+    }
     
     pot2 = analogRead(POT2);
     mix = (uint8_t)processpot(0.0, 100.0, pot2);
     setMix(mix);
+    if(!isinrange(pot2, oldpot2, 10))
+    {
+      func_counter=5;
+      oldpot2 = pot2;
+    }
     
     pot3 = analogRead(POT3);
     colorvalue = processpot(COLORMIN, COLORMAX, pot3);
     setColor(colorvalue);
+    if(!isinrange(pot3, oldpot3, 10))
+    {
+      func_counter=3;
+      oldpot3 = pot3;
+    }
     
     pot4 = analogRead(POT4);
     volumedB = processpot(VOLMIN, VOLMAX, pot4);
     setVolume(volumedB);
+    if(!isinrange(pot4, oldpot4, 10))
+    {
+      func_counter=4;
+      oldpot4 = pot4;
+    }
     
     if(old_func_counter != func_counter)
     {
@@ -634,7 +658,7 @@ void setFrequency(void)
   static float oldfrequency = 0.00;
   
   if(frequency != oldfrequency) // Freq change, update all oscillators
-  {
+  { 
     triangle_source(DEVICE_ADDR_7bit, Triangle1, frequency*2.00);
     delayMicroseconds(10);
     sine_source(DEVICE_ADDR_7bit, Tone1, frequency);
