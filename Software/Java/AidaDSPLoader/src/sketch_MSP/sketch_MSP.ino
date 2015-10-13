@@ -135,7 +135,7 @@ void loop()
       case chksum:
         checksum = ~checksum + 1; // Checksum algorithm
         checksum &= 0xFF;
-        if(inByte==checksum)
+        if(inByte==(char)checksum)
         {
           // Checksum OK
           comstate = etx;
@@ -168,7 +168,7 @@ void loop()
 
   if(digitalRead(ENC_PUSH)==LOW)  
   {
-    digitalWrite(GREEN_LED, HIGH);
+    //digitalWrite(GREEN_LED, HIGH);
     delay(50);  // debounce
     if(digitalRead(ENC_PUSH)==LOW)
     {
@@ -184,7 +184,7 @@ void loop()
     else
       function = 0;  // No function triggered on switch
     count = 0;
-    digitalWrite(GREEN_LED, LOW);
+    //digitalWrite(GREEN_LED, LOW);
   }
 
   if(function==1)
