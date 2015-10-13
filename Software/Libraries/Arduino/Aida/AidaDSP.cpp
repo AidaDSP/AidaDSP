@@ -46,7 +46,10 @@ int32_t max_number_of_pulses = MAX_PULSES_ROUGH; // rough regulation default
 
 
 // PUBLIC FUNCTIONS DEFINITIONS	
-		  
+/**
+ * Set fine or rough regulation for process encoder function
+ * @param fine - if 1/true fine mode is activated
+ */		  
 void set_regulation_precision(uint8_t fine)
 {
   if(fine)
@@ -55,6 +58,10 @@ void set_regulation_precision(uint8_t fine)
     max_number_of_pulses = MAX_PULSES_ROUGH;
 }
 
+/**
+ * Get fine or rough regulation setting
+ * @return fine - if 1/true fine mode is activated
+ */		  
 uint8_t get_regulation_precision(void)
 {
   if(max_number_of_pulses == MAX_PULSES_FINE)
@@ -63,7 +70,13 @@ uint8_t get_regulation_precision(void)
     return 0; // rough regulation 
 }
 
-// This function manage the value of the encoder for user control of Sigma DSP parameters
+/**
+ * This function transform pulses from encoder in user defined range values
+ * @param minval
+ * @param maxval
+ * @param pulses - the actual pulses count see getPulses()
+ * @return float - return a value between minval and maxval when user turn encoder knob
+ */
 float processencoder(float minval, float maxval, int32_t pulses)
 {
   float val = 0.00;
@@ -110,7 +123,13 @@ float processencoder(float minval, float maxval, int32_t pulses)
   }
 }
 
-// The behaviour of this function is the same of selector with pot with the difference here we do not need to specify n bits of the selector
+/**
+ * This function transform pulses from encoder in a selector which returns integer indexes 
+ * useful for mux switch operation or menu entries
+ * @param pulses - the actual pulses count see getPulses()
+ * @param bits - number of bits for selector: 2=1:4, 3=1:8, etc...
+ * @return uint16 - return a value between minval and maxval when user turn encoder knob
+ */
 uint16_t selectorwithencoder(int32_t pulses, uint8_t bits)
 {
   uint16_t result = 1;
@@ -125,7 +144,13 @@ uint16_t selectorwithencoder(int32_t pulses, uint8_t bits)
   return result;  // Because we manage encoder in 4x resolution so every step on the encoder gives 4 increment 
 }
 
-// This function manage the value of a pot for user control of Sigma DSP parameters
+/**
+ * This function transform values from pot mounted on adc input in user defined range values
+ * @param minval
+ * @param maxval
+ * @param potval - the actual adc value returned by analogRead(Ax)
+ * @return float - return a value between minval and maxval when user turn a pot mounted on adc input
+ */
 float processpot(float minval, float maxval, uint16_t potval)
 {
   if(minval < 0)
@@ -141,6 +166,13 @@ float processpot(float minval, float maxval, uint16_t potval)
   }
 }
 
+/**
+ * This function transform values from pot mounted on adc input in a selector which returns integer indexes 
+ * useful for mux switch operation or menu entries
+ * @param potval - the actual adc value returned by analogRead(Ax)
+ * @param bits - number of bits for selector: 2=1:4, 3=1:8, etc...
+ * @return uint16 - return a value between minval and maxval when user turn encoder knob
+ */
 uint16_t selectorwithpot(uint16_t potval, uint8_t bits)
 {
   uint16_t result = 1;
@@ -151,6 +183,13 @@ uint16_t selectorwithpot(uint16_t potval, uint8_t bits)
   return result;
 }
 
+/**
+ * This function returns 1/true if input value is between a reference value with threshold
+ * useful for know if a knob has been turned by user, without picking noise
+ * @param value - the actual value you want to compare
+ * @param reference - your reference value
+ * @return threshold - value of threshold 
+ */
 uint8_t isinrange(int16_t value, int16_t reference, int16_t threshold)
 {
   if(value < (reference+threshold) && value > (reference-threshold))
@@ -161,6 +200,10 @@ uint8_t isinrange(int16_t value, int16_t reference, int16_t threshold)
     return 0;
 }
 
+/**
+ * This function initialize Aida DSP board by configuring I/O and
+ * leaves DSP in reset state when exits
+ */
 void InitAida(void)
 {
   #ifdef __AVR__
@@ -207,7 +250,9 @@ void InitAida(void)
   delay(10); 
 }
 
-// Interrupt for encoder management
+/**
+ * Interrupt for encoder management
+ */
 void enc_manager(void)
 {
   uint8_t change = 0;
@@ -254,20 +299,33 @@ void setPulses(int32_t value)
 	Pulses = value;
 }
 
+/**
+ * This function controls a standard gain cell 
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param value - the desired gain value (linear)
+ */
 void gainCell(uint8_t dspAddress, uint16_t address, float value)
 {
 	AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, false, value);
 }
-/*
-This function manage a mono volume control 
+
+/**
+ * This function controls a mono volume cell 
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param value - the desired gain value (linear)
  */
 void MasterVolumeMono(uint8_t dspAddress, uint16_t address, float value)
 {
   AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, false, value);
 }
 
-/*
-This function manage a stereo volume control 
+/**
+ * This function controls a stereo volume cell
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param value - the desired gain value (linear) for both channels of stereo pairs 
  */
 void MasterVolumeStereo(uint8_t dspAddress, uint16_t address, float value)
 {
@@ -275,8 +333,11 @@ void MasterVolumeStereo(uint8_t dspAddress, uint16_t address, float value)
   AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, value);
 }
 
-/*
-This function manage a 1st order equalizer of two: low pass and high pass
+/**
+ * This function manages a general 1st order filter block
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param equalizer - the struct which contains multiple settings for equalizer (see AidaDSP.h)
  */
 void EQ1stOrd(uint8_t dspAddress, uint16_t address, equalizer_t* equalizer){
 
@@ -330,8 +391,11 @@ void EQ1stOrd(uint8_t dspAddress, uint16_t address, equalizer_t* equalizer){
   //Serial.println(coefficients[2], 3);
 }
 
-/*
-This function manage a 2nd order equalizer of many types: low pass, parametric...and so on
+/**
+ * This function manages a general 2nd order filter block
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param equalizer - the struct which contains multiple settings for equalizer (see AidaDSP.h)
  */
 void EQ2ndOrd(uint8_t dspAddress, uint16_t address, equalizer_t* equalizer){
 
@@ -488,6 +552,12 @@ void EQ2ndOrd(uint8_t dspAddress, uint16_t address, equalizer_t* equalizer){
   Serial.println(coefficients[4], 3);*/
 }
 
+/**
+ * This function manages a baxandall low-high dual tone control
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param toneCtrl - the struct which contains multiple settings for tone control (see AidaDSP.h)
+ */
 void ToneControl(uint8_t dspAddress, uint16_t address, toneCtrl_t *toneCtrl){
  
   float tb,bb,wT,wB,Knum_T,Kden_T,Knum_B,Kden_B,alpha0,beta1,alpha1,beta2,alpha2,beta3,alpha3,beta4;
@@ -560,8 +630,13 @@ void ToneControl(uint8_t dspAddress, uint16_t address, toneCtrl_t *toneCtrl){
   AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, false, coefficients[4]);
 }
 
-// Frequency range: 1-19148 Hz
-// q range:			1.28:10			
+/**
+ * This function control a state variable filter block
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param frequency - frequency range: 1-19148 Hz 
+ * @param q - q range: 1.28:10
+ */			
 void StateVariable(uint8_t dspAddress, uint16_t address, float frequency, float q){
 
   float param1 = 0.00, param2 = 0.00;
@@ -588,16 +663,17 @@ void linspace(float x1, float x2, float n, float vect[])
     vect[i] = x1+(k*i);    
 }
 
-/*
-This function calculates the curve and the other parameters of a compressor rms block in Sigma Studio and send them over I2C
- dspAddress: device physical addr
- address: starting address for a compressor block
- compressor_t: struct containing classic compressor parameters
- thresold: [dB]
- ratio: compressor's ratio. If ratio = 6, gain = 1/ratio = 1/6 so compression ratio 6:1
- attack: range 1-500 [ms] 
- hold: range 1-attack [ms]
- decay: range 868-2000 [ms]
+ /**
+ * This function calculates the curve and the other parameters of a compressor rms block 
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param compressor - the struct which contains multiple settings for compressor control (see AidaDSP.h)
+ * compressor_t: struct containing classic compressor parameters
+ *   thresold: [dB]
+ *   ratio: compressor's ratio. If ratio = 6, gain = 1/ratio = 1/6 so compression ratio 6:1
+ *   attack: range 1-500 [ms] 
+ *   hold: range 1-attack [ms]
+ *   decay: range 868-2000 [ms]
  */
 void CompressorRMS(uint8_t dspAddress, uint16_t address, compressor_t* compressor)    // set ratio = 1 to disable compressor
 {
@@ -670,6 +746,18 @@ void CompressorRMS(uint8_t dspAddress, uint16_t address, compressor_t* compresso
 
 }
 
+/**
+ * This function calculates the curve and the other parameters of a compressor peak block 
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param compressor - the struct which contains multiple settings for compressor control (see AidaDSP.h)
+ * compressor_t: struct containing classic compressor parameters
+ *   thresold: [dB]
+ *   ratio: compressor's ratio. If ratio = 6, gain = 1/ratio = 1/6 so compression ratio 6:1
+ *   attack: there is no attack parameter for peak compressor (very fast) 
+ *   hold: range 1-attack [ms]
+ *   decay: range 868-2000 [ms]
+ */
 void CompressorPeak(uint8_t dspAddress, uint16_t address, compressor_t* compressor)    // set ratio = 1 to disable compressor
 {
   uint8_t i,count;
@@ -732,9 +820,14 @@ void CompressorPeak(uint8_t dspAddress, uint16_t address, compressor_t* compress
   AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, decay_par);
 }
 
-// Read audio level signal in 5.19 fixed point format
-// from ReadBack block in Sigma Studio (dbl)
-// and returns in dB
+/**
+ * This function reads value of signal inside DSP chain, useful for monitoring
+ * levels from inside DSP algorithm, uses a readback cell
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param capturecount - the program count position at which you placed readback cell (see examples) 
+ * @param value - the return linear value in floating point of audio level on readback cell. Range: +/-1.0
+ */
 void readBack(uint8_t dspAddress, uint16_t address, uint16_t capturecount, float *value){
 
   uint8_t buf[3];
@@ -756,6 +849,13 @@ void readBack(uint8_t dspAddress, uint16_t address, uint16_t capturecount, float
   *value = ((float)word32/(1 << 27)); // I'm converting to 5.27 to maintain sign
 }
 
+/**
+ * This function controls an audio multiplexer cell (switch audio signals)
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param select - the index (the signal) you want to switch to
+ * @param nchannels - the total number of channels switchable in mux cell
+ */
 void mux(uint8_t dspAddress, uint16_t address, uint8_t select, uint8_t nchannels)
 {
   uint8_t i;
@@ -769,6 +869,14 @@ void mux(uint8_t dspAddress, uint16_t address, uint8_t select, uint8_t nchannels
   }  
 }
 
+/**
+ * This function controls an hard saturation cell
+ * with separate negative and positive threshold
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param th_high - the high threshold 0-1.0
+ * @param th_low - the low threshold -1.0-0
+ */
 void hard_clip(uint8_t dspAddress, uint16_t address, float th_high, float th_low)
 {
   uint8_t buffer[12];
@@ -780,6 +888,13 @@ void hard_clip(uint8_t dspAddress, uint16_t address, float th_high, float th_low
   AIDA_WRITE_REGISTER(dspAddress, address, 12, buffer);
 }
 
+/**
+ * This function controls an soft saturation cell
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param alpha - the main coefficient for soft clipping curve, the
+ * higher the coefficient, the smoothest the curve
+ */
 void soft_clip(uint8_t dspAddress, uint16_t address, float alpha)
 {
   float onethird = 0.333;
@@ -791,11 +906,23 @@ void soft_clip(uint8_t dspAddress, uint16_t address, float alpha)
   AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, true, twothird);
 }
 
+/**
+ * This function controls a DC source cell
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param value - dc value level range +/-1.0
+ */
 void dc_source(uint8_t dspAddress, uint16_t address, float value)
 {
   AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, value);
 }
 
+/**
+ * This function controls a sine source cell
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param frequency - the desired frequency for the signal
+ */
 void sine_source(uint8_t dspAddress, uint16_t address, float frequency)
 {
 	float value = (1.00/24000.00)*frequency;
@@ -806,6 +933,12 @@ void sine_source(uint8_t dspAddress, uint16_t address, float frequency)
 	AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, 1.0);	 	 // ison
 }
 
+/**
+ * This function controls a sawtooth source cell
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param frequency - the desired frequency for the signal
+ */
 void sawtooth_source(uint8_t dspAddress, uint16_t address, float frequency)
 {
 	float value = (0.50/24000.00)*frequency;
@@ -814,11 +947,23 @@ void sawtooth_source(uint8_t dspAddress, uint16_t address, float frequency)
 	AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, 1.0);	 	 // ison
 }
 
+/**
+ * This function controls a square source cell
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param frequency - the desired frequency for the signal
+ */
 void square_source(uint8_t dspAddress, uint16_t address, float frequency)
 {
 	sine_source(dspAddress, address, frequency);	// same as sine source
 }
 
+/**
+ * This function controls a triangle source cell
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param frequency - the desired frequency for the signal
+ */
 void triangle_source(uint8_t dspAddress, uint16_t address, float frequency)
 {
 	float value = (0.50/24000.00)*frequency;
@@ -834,8 +979,9 @@ void triangle_source(uint8_t dspAddress, uint16_t address, float frequency)
 	AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, 1.0);	 	 // ison
 }
 
-// PRIVATE FUNCTIONS DEFINITIONS (DO NOT EDIT)	             
-
+// ******************************************************************
+// *          PRIVATE FUNCTIONS DEFINITIONS (DO NOT EDIT)	          *          
+// ******************************************************************
 void float_to_fixed(float value, uint8_t *buffer)  
 {
   int32_t fixedval = 0;
