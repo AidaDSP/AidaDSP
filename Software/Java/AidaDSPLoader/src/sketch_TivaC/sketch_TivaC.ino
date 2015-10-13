@@ -79,7 +79,7 @@ void setup()
   pinMode(BLUE_LED, OUTPUT);
   
   // open the USBSerial port
-  Serial.begin(115200);
+  Serial.begin(9600);
   Serial.flush();
   comstate = stx;
   

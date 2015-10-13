@@ -35,7 +35,7 @@ public class AIDA_RX_TX_COM_Port implements   SerialPortEventListener   {
 	/** Milliseconds to block while waiting for port open */
 	private static final int TIME_OUT = 2000;
 	/** Default bits per second for COM port. */
-	private static final int DATA_RATE = 115200;
+	private static final int DATA_RATE = 9600;
 	
 	
 	static FileWriter w;
@@ -555,7 +555,7 @@ public class AIDA_RX_TX_COM_Port implements   SerialPortEventListener   {
 		//fileRead=ARGS[0];
 		/*my_port=ARGS[1];
 		my_port=my_port.toUpperCase();*/
-		my_port="COM8";
+		my_port="COM9";
 		fileRead="C:\\Users\\Massimo\\Documents\\WorkspaceEclipse\\AidaDSPLoader\\Tutorial_2.xml";		
 		
 		long start=System.nanoTime();

@@ -1,3 +1,0 @@
-Il DSP non ha risposto al pacchetto numero 1 del burst numero 1 con checksum -62 Tentativo 1
-Il DSP ha ricevuto il pacchetto numero 1 del burst numero 1 con checksum -62 Tentativo 2
-Il DSP non ha risposto al pacchetto numero 1 del burst numero 2 con checksum 10 Tentativo 1
