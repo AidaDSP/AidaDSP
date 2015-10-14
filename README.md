@@ -33,7 +33,7 @@ Audio enthusiasts, this board is for you!!!
 NOTE: this solution is SUPERIOR to ANY present and future DSP system based on a microcontroller with external Codec.
 Microcontrollers, once very similar to DSPs, are a whole DIFFERENT story. The hardware of this DSP is DEDICATED
 for audio processing, for example you have 56-bit accumulator wich gives you room for internal algorithm gains without the 
-risk for clipping. Ready to use algorithms cell has been coded and optimized in ASSEMBLER by Analog Devices Engineers, wich work at the top of audio industry from 40 years.
+risk for clipping. Ready to use algorithms cell has been coded and optimized in ASSEMBLER by Analog Devices Engineers, which work at the top of audio industry from 40 years.
 
 2015 Aida Team
 www.aidadsp.com
