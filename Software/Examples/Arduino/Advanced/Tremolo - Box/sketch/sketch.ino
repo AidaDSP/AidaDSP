@@ -142,6 +142,8 @@ uint8_t push_1_lock = 0;
 // Push 2
 uint8_t push_2_lock = 0;
 
+uint8_t reinitdisplaycounter = 0;
+
 // Configure pins for LCD display
 LiquidCrystal lcd(17, 16, 15, 14, 6, 7); // RS, EN, D4, D5, D6, D7
 
@@ -288,6 +290,12 @@ void loop()
     Serial.println(getPulses(), DEC);
     Serial.write('\n');
     
+    reinitdisplaycounter++;
+    if(reinitdisplaycounter==4) // Sometimes display takes noise and corrupts its RAM...
+    {
+      lcd.begin(16, 2); // set up the LCD's number of columns and rows
+      reinitdisplaycounter = 0;
+    }
     /*readbackcount = (ReadBackAlg1Data[0]<<8) | (ReadBackAlg1Data[1]&0xFF);
     readBack(DEVICE_ADDR_7bit, ReadBackAlg1, readbackcount, &readback);
     if(readback > readbackmax)
