@@ -155,10 +155,17 @@ float processpot(float minval, float maxval, uint16_t potval)
 {
   if(minval < 0)
   {
-    if(potval >= MIDDLEVAL)
-      return ((potval-MIDDLEVAL)*(maxval/MIDDLEVAL));
+    if(maxval<0)
+    {
+      return (((potval*((abs(minval)-abs(maxval))/FULLRANGEVAL)))+minval);
+    }
     else
-      return ((MIDDLEVAL-potval)*(minval/MIDDLEVAL));
+    {
+      if(potval >= MIDDLEVAL)
+        return ((potval-MIDDLEVAL)*(maxval/MIDDLEVAL));
+      else
+        return ((MIDDLEVAL-potval)*(minval/MIDDLEVAL));
+    }
   } 
   else
   {
