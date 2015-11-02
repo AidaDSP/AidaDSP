@@ -41,7 +41,7 @@ void program_download() {
 	AIDA_WRITE_REGISTER_BLOCK( DEVICE_ADDR_7bit, progDataAddr, progDataSize, progDataData );
 	AIDA_WRITE_REGISTER_BLOCK( DEVICE_ADDR_7bit, regParamAddr, regParamSize, regParamData );
 	AIDA_WRITE_REGISTER_BLOCK( DEVICE_ADDR_7bit, HWConFigurationAddr, HWConFigurationSize, HWConFigurationData );
-	AIDA_WRITE_REGISTER_BLOCK( DEVICE_ADDR_7bit, CoreRegisterR4Addr, CoreRegisterR4Size, CoreRegisterR4Data );
+	//AIDA_WRITE_REGISTER_BLOCK( DEVICE_ADDR_7bit, CoreRegisterR4Addr, CoreRegisterR4Size, CoreRegisterR4Data );
 }
 
 

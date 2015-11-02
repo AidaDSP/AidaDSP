@@ -62,7 +62,8 @@ uint8_t restoreflag = false;
 uint16_t PotValue = 0;
 uint32_t timec=0, prevtimec=0;
 
-float volume = 0.00;
+float volumedB = 0.00;
+float volumel  = 0.00;
 
 void setup()
 {
@@ -83,7 +84,14 @@ void setup()
   delay(100);  // Start-up delay for DSP
   program_download();    // Here we load program, parameters and hardware configuration to DSP
   delay(20);
+  check_program(); // !!!Debug!!!
+  delay(5);
+  check_param(); // !!!Debug!!!
+  delay(5);
+  check_config(); // !!!Debug!!!
+  delay(2);
   spettacolino();
+  AIDA_WRITE_REGISTER_BLOCK( DEVICE_ADDR_7bit, CoreRegisterR4Addr, CoreRegisterR4Size, CoreRegisterR4Data ); // Mute Off DACs
 }
 
 void loop()
@@ -143,15 +151,16 @@ void loop()
           restoreflag = false;
           setPulses(OldPulses);
         }
-        volume = processencoder(VOLMIN, VOLMAX, getPulses()); // dB
+        volumedB = processencoder(VOLMIN, VOLMAX, getPulses()); // dB
         Serial.print(F(" Master Vol. : "));
-        Serial.print(volume, 1);
+        Serial.print(volumedB, 1);
         Serial.println(F("dB"));
-        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20)); // Call Aida DSP API with linear value from dB
+        volumel = pow(10, volumedB/20.0);
+        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, volumel); // Call Aida DSP API with linear value from dB
       }
       else
       {
-        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20)); // To re-enable volume after mute switch off
+        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, volumel); // To re-enable volume after mute switch off
       }			
     }
     else if(mute == ON)
@@ -218,4 +227,169 @@ void clearAndHome(void)
   Serial.print(F("[H")); // cursor to home
 }
 
+void check_program(void) 
+{
+  uint8_t value_wr = 0;
+  uint8_t buff_r[5];
+  uint8_t value_r;
+  uint16_t addr = progDataAddr;
+  uint16_t i, j, errors;
+  
+  Serial.println(F("Program checking..."));
+  
+  errors = 0;
+  for(i=0;i<progDataSize;i+=5) // Program address 1024 to 2047
+  {
+    memset(buff_r, 0, 5);
+    AIDA_READ_REGISTER(DEVICE_ADDR_7bit, addr, 5, buff_r); 
+    for(j=0;j<5;j++)
+    {
+      #ifdef __AVR__
+      //value_wr = pgm_read_byte_far(&progDataData[i+j]);
+      value_wr = pgm_read_byte_near(&progDataData[i+j]);
+      #else
+      value_wr = progDataData[i+j];
+      #endif
+      value_r = buff_r[j];
+      if(value_wr != value_r)
+      {
+        errors++;
+        break;
+      }
+    }
+    if(errors)
+      break;
+    addr++;
+    delayMicroseconds(100);
+  }
+
+  if(errors)
+  {
+    //Serial.print(F("i: "));
+    //Serial.println(i, DEC);
+    //Serial.print(F("j: "));
+    //Serial.println(j, DEC);
+    Serial.print(errors, DEC);
+    Serial.println(F(" errors during Program download")); 
+    Serial.print(F("Address: "));
+    Serial.println(addr, DEC);
+    Serial.print(F("Written = "));
+    Serial.print(F("0x"));
+    Serial.println(value_wr, HEX);
+    Serial.print(F("Readed = "));
+    Serial.print(F("0x"));
+    Serial.println(value_r, HEX);
+    while(1);
+  }
+  else
+  {
+    Serial.println(F("Program OK"));
+  }
+}
+
+void check_param(void)
+{
+  uint8_t value_wr = 0;
+  uint8_t buff_r[4];
+  uint8_t value_r;
+  uint16_t addr = regParamAddr;
+  uint16_t i, j, errors;
+  
+  Serial.println(F("Parameter checking..."));
+  
+  errors = 0;
+  for(i=0;i<regParamSize;i+=4) // 0 to 1023
+  {
+    memset(buff_r, 0, 4);
+    AIDA_READ_REGISTER(DEVICE_ADDR_7bit, addr, 4, buff_r); 
+    for(j=0;j<4;j++)
+    {
+      #ifdef __AVR__
+      //value_wr = pgm_read_byte_far(&regParamData[i+j]);
+      value_wr = pgm_read_byte_near(&regParamData[i+j]);
+      #else
+      value_wr = regParamData[i+j];
+      #endif
+      value_r = buff_r[j];
+      if(value_wr != value_r)
+      {
+        errors++;
+        break;
+      }
+    }
+    if(errors)
+      break;
+    addr++;
+    delayMicroseconds(100);
+  }
+  
+  if(errors)
+  {
+    Serial.print(errors, DEC);
+    Serial.println(F(" errors during Reg Param download")); 
+    Serial.print(F("Address: "));
+    Serial.println(addr, DEC);
+    Serial.print(F("Written = "));
+    Serial.print(F("0x"));
+    Serial.println(value_wr, HEX);
+    Serial.print(F("Readed = "));
+    Serial.print(F("0x"));
+    Serial.println(value_r, HEX);
+    while(1);
+  }
+  else
+  {
+    Serial.println(F("Reg Param OK"));
+  }
+}
+
+void check_config(void)
+{
+  uint8_t value_wr = 0;
+  uint8_t buff_r[HWConFigurationSize];
+  uint8_t value_r;
+  uint16_t addr = HWConFigurationAddr;
+  uint16_t i, errors;
+  
+  Serial.println(F("HW Config checking..."));
+  
+  errors = 0;
+  memset(buff_r, 0, HWConFigurationSize);
+  AIDA_READ_REGISTER(DEVICE_ADDR_7bit, addr, HWConFigurationSize, buff_r); // Read all parameters in one block   
+  
+  for(i=0;i<HWConFigurationSize;i++) //  2076 to 2087 
+  {
+    #ifdef __AVR__
+    //value_wr = pgm_read_byte_far(&HWConFigurationData[i]);
+    value_wr = pgm_read_byte_near(&HWConFigurationData[i]);
+    #else
+    value_wr = HWConFigurationData[i];
+    #endif
+    value_r = buff_r[i];
+    if(value_wr != value_r)
+    {
+      errors++;
+      break;
+    }
+  }
+  
+  if(errors)
+  {
+    Serial.print(errors, DEC);
+    Serial.println(F(" errors during HW config download")); 
+    Serial.print(F("Address: "));
+    Serial.println(addr, DEC);
+    Serial.print(F("Written = "));
+    Serial.print(F("0x"));
+    Serial.println(value_wr, HEX);
+    Serial.print(F("Readed = "));
+    Serial.print(F("0x"));
+    Serial.println(value_r, HEX);
+    while(1);
+  }
+  else
+  {
+    Serial.println(F("HW Config OK"));
+  }
+}
 
