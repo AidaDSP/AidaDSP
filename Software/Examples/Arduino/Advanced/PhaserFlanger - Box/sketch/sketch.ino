@@ -48,6 +48,7 @@
 //#define FREQMAX 10000.0f // Hz
 #define COLORMIN -15.00f // dB
 #define COLORMAX 15.00f // dB
+#define POT_THR 10.0 // Threshold for filtering noise on pots (adcs)
 
 #define ON 1
 #define OFF 0
@@ -274,40 +275,40 @@ void loop()
     setBypass(); // Using PUSH_2 and LED_2
     
     pot1 = analogRead(POT1);
-    bpm = processpot(BPMMIN, BPMMAX, pot1);
-    frequency = bpm / 60.0; // Bpm to frequency conversion
-    setFrequency();
-    if(!isinrange(pot1, oldpot1, 10))
+    if(!isinrange(pot1, oldpot1, POT_THR))
     {
       func_counter=0;
       oldpot1 = pot1;
+      bpm = processpot(BPMMIN, BPMMAX, pot1);
+      frequency = bpm / 60.0; // Bpm to frequency conversion
+      setFrequency();
     }
     
     pot2 = analogRead(POT2);
-    mix = (uint8_t)processpot(0.0, 100.0, pot2);
-    setMix(mix);
-    if(!isinrange(pot2, oldpot2, 10))
+    if(!isinrange(pot2, oldpot2, POT_THR))
     {
       func_counter=5;
       oldpot2 = pot2;
+      mix = (uint8_t)processpot(0.0, 100.0, pot2);
+      setMix(mix);
     }
     
     pot3 = analogRead(POT3);
-    colorvalue = processpot(COLORMIN, COLORMAX, pot3);
-    setColor(colorvalue);
-    if(!isinrange(pot3, oldpot3, 10))
+    if(!isinrange(pot3, oldpot3, POT_THR))
     {
       func_counter=3;
       oldpot3 = pot3;
+      colorvalue = processpot(COLORMIN, COLORMAX, pot3);
+      setColor(colorvalue);
     }
     
     pot4 = analogRead(POT4);
-    volumedB = processpot(VOLMIN, VOLMAX, pot4);
-    setVolume(volumedB);
-    if(!isinrange(pot4, oldpot4, 10))
+    if(!isinrange(pot4, oldpot4, POT_THR))
     {
       func_counter=4;
       oldpot4 = pot4;
+      volumedB = processpot(VOLMIN, VOLMAX, pot4);
+      setVolume(volumedB);
     }
     
     if(old_func_counter != func_counter)
