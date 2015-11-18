@@ -498,7 +498,7 @@ public class AIDA_header_file_generator extends Frame implements ActionListener 
 			fw.newLine();
 			fw.write("void program_download() {\n");
 			fw.write("\tAIDA_WRITE_REGISTER_BLOCK( DEVICE_ADDR_7bit, CoreRegisterR0Addr, CoreRegisterR0Size, CoreRegisterR0Data );\n");
-			fw.write("\tAIDA_WRITE_REGISTER_BLOCK( DEVICE_ADDR_7bit, progDataAddr, progDataSize, progDataData );\n");
+			fw.write("\tAIDA_WRITE_REGISTER_BLOCK( DEVICE_ADDR_7bit, ProgramDataAddr, ProgramDataSize, ProgramDataData );\n");
 			fw.write("\tAIDA_WRITE_REGISTER_BLOCK( DEVICE_ADDR_7bit, regParamAddr, regParamSize, regParamData );\n");
 			fw.write("\tAIDA_WRITE_REGISTER_BLOCK( DEVICE_ADDR_7bit, HWConFigurationAddr, HWConFigurationSize, HWConFigurationData );\n");
 			fw.write("\tAIDA_WRITE_REGISTER_BLOCK( DEVICE_ADDR_7bit, CoreRegisterR4Addr, CoreRegisterR4Size, CoreRegisterR4Data );\n");
