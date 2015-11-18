@@ -484,23 +484,23 @@ void check_program(void)
   uint8_t value_wr = 0;
   uint8_t buff_r[5];
   uint8_t value_r;
-  uint16_t addr = progDataAddr;
+  uint16_t addr = ProgramDataAddr;
   uint16_t i, j, errors;
   
   Serial.println(F("Program checking..."));
   
   errors = 0;
-  for(i=0;i<progDataSize;i+=5) // Program address 1024 to 2047
+  for(i=0;i<ProgramDataSize;i+=5) // Program address 1024 to 2047
   {
     memset(buff_r, 0, 5);
     AIDA_READ_REGISTER(DEVICE_ADDR_7bit, addr, 5, buff_r); 
     for(j=0;j<5;j++)
     {
       #ifdef __AVR__
-      //value_wr = pgm_read_byte_far(&progDataData[i+j]);
-      value_wr = pgm_read_byte_near(&progDataData[i+j]);
+      //value_wr = pgm_read_byte_far(&ProgramDataData[i+j]);
+      value_wr = pgm_read_byte_near(&ProgramDataData[i+j]);
       #else
-      value_wr = progDataData[i+j];
+      value_wr = ProgramDataData[i+j];
       #endif
       value_r = buff_r[j];
       if(value_wr != value_r)
