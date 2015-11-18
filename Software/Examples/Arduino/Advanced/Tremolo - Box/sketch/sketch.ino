@@ -563,6 +563,8 @@ void check_param(void)
       value_wr = regParamData[i+j];
       #endif
       value_r = buff_r[j];
+      if(j==0)
+        value_wr&=0x0F;
       if(value_wr != value_r)
       {
         errors++;
