@@ -74,6 +74,7 @@ void setFrequency(void);
 void setLfo(void);
 void setColor(float);
 void setVolume(float);
+void setFXType(void);
 void depth(void);
 void print_menu_putty(void);
 void print_menu_lcd(void);
@@ -90,6 +91,7 @@ uint8_t mode = 1;
 uint8_t lfotype = 1;
 uint8_t restore = 1;
 uint8_t mix = 0;
+uint8_t fx_counter = 0;
 uint16_t readbackcount = 0;
 int32_t freqpulses = 198;
 int32_t bpmpulses = 213;
@@ -174,12 +176,12 @@ void setup()
   delay(2);
   spettacolino();
    
-  AIDA_WRITE_REGISTER_BLOCK(DEVICE_ADDR_7bit, CoreRegisterR4Addr, CoreRegisterR4Size, CoreRegisterR4Data);    // Mute DAC Off
+  MuteOff();  // Mute DAC Off
   
   // Bypass status init = disable
   bypass = 0;
   mux(DEVICE_ADDR_7bit, Bypass, 2, 2); // FX
-  digitalWrite(LED_2, LOW);
+  digitalWrite(LED_2, LOW); // Led 2 On
 }
 
 void loop()
@@ -215,7 +217,7 @@ void loop()
   }
   else if(push_e_function==2)
   {
-    bypass ^=1; 
+    // Not managed yet
   }
   
   if(digitalRead(PUSH_1)==LOW)
@@ -226,6 +228,9 @@ void loop()
       if(push_1_lock != 1)
       {
         push_1_lock = 1;
+        fx_counter++;
+        if(fx_counter == 3)
+          fx_counter = 0;
       }
     }
   }
@@ -271,7 +276,7 @@ void loop()
       reinitdisplaycounter = 0;
     }
     
-    //setMode(); // Using PUSH_1 and LED_1
+    setFXType(); // Using PUSH_1 and LED_1
     setBypass(); // Using PUSH_2 and LED_2
     
     pot1 = analogRead(POT1);
@@ -331,8 +336,7 @@ void loop()
       //frequency = processencoder(FREQMIN, FREQMAX, freqpulses);
       bpm = processencoder(BPMMIN, BPMMAX, bpmpulses);
       frequency = bpm / 60.0;
-      setFrequency();
-      */
+      setFrequency();*/
       break;
     case 1: // LFO type
       if(restore)
@@ -401,7 +405,7 @@ void loop()
     } // End switch func_counter
 
     // Display information for user
-    print_menu_putty();
+    //print_menu_putty();
     print_menu_lcd();
 
     prevtimec = timec;
@@ -648,35 +652,55 @@ void setMode(void)
 {
   static uint8_t oldmode = 0;
   
-  if(mode>1)
-    digitalWrite(LED_1, LOW); // Harmonic LED_1 On
-  else
-    digitalWrite(LED_1, HIGH); // Normal mode LED_1 Off
-  
   if(oldmode != mode)
   {
-    MuteOn();
-    switch(mode)
+    if(fx_counter == 1) // If Phaser 2 selected
     {
-    case 1:  
-      mux(DEVICE_ADDR_7bit, FXSelect, 1, 3); // Phaser1
-      delayMicroseconds(100);
-      break;
-    case 2:
-      mux(DEVICE_ADDR_7bit, FXSelect, 2, 3); // Phaser2
-      delayMicroseconds(100);
-      break;
-    case 3:
-      mux(DEVICE_ADDR_7bit, FXSelect, 3, 3); // Flanger
-      delayMicroseconds(100);
-      break;
-    case 4:
-   
-      break;
+      switch(mode)
+      {
+      case 1:  
+        mux(DEVICE_ADDR_7bit, Phaser2StageSelector, 1, 4); // 4 Stage Phaser 2
+        break;
+      case 2:
+        mux(DEVICE_ADDR_7bit, Phaser2StageSelector, 2, 4); // 8 Stage Phaser 2
+        break;
+      case 3:
+        mux(DEVICE_ADDR_7bit, Phaser2StageSelector, 3, 4); // 12 Stage Phaser 2
+        break; 
+      case 4:
+        mux(DEVICE_ADDR_7bit, Phaser2StageSelector, 4, 4); // 16 Stage Phaser 2
+        break;
+      }
     }
-    MuteOff();
     oldmode = mode;
   }
+}
+
+void setFXType(void)
+{
+  static uint8_t oldfx_counter = 0;
+  
+  if(fx_counter>1) // If Flanger Fx selected
+    digitalWrite(LED_1, LOW); // Harmonic LED_1 On
+  else
+    digitalWrite(LED_1, HIGH); // Normal mode Harmonic LED_1 Off
+   
+  if(oldfx_counter != fx_counter)
+  { 
+    switch(fx_counter)
+    {
+      case 0:
+        mux(DEVICE_ADDR_7bit, FXSelect, 1, 3); // Phaser 1 Tracking Filter
+        break;
+      case 1:
+        mux(DEVICE_ADDR_7bit, FXSelect, 2, 3); // Phaser 2 Cascade All Pass
+        break;
+      case 2:
+        mux(DEVICE_ADDR_7bit, FXSelect, 3, 3); // Flanger
+        break;
+    }
+    oldfx_counter = fx_counter;
+  } 
 }
 
 void depth(void)
@@ -755,6 +779,20 @@ void print_menu_lcd(void)
     lcd.print(F("BYPASS"));
   else
   {
+    switch(fx_counter)
+    {
+      case 0:
+        lcd.print(F("Phaser 1 TrkFlt"));
+        break;
+      case 1:
+        lcd.print(F("Phaser 2 AllPFlt"));
+        break;
+      case 2:
+        lcd.print(F("Flanger"));
+        break;
+        
+    }
+    lcd.setCursor(0, 1);
     switch(func_counter)
     {
       case 0:
@@ -772,13 +810,22 @@ void print_menu_lcd(void)
           lcd.print(F("triang"));
         break;
       case 2:
-        lcd.print(F("Mode: "));
-        if(mode==1)
-          lcd.print(F("Phaser1"));
-        if(mode==2)
-          lcd.print(F("Phaser2"));
-        if(mode==3)
-          lcd.print(F("Flanger"));
+        if(fx_counter==1) // If Phaser 2
+        {
+          lcd.print(F("NStages: "));
+          if(mode==1)
+            lcd.print(F("4"));
+          if(mode==2)
+            lcd.print(F("8"));
+          if(mode==3)
+            lcd.print(F("12"));
+          if(mode==4)
+            lcd.print(F("16"));
+        }
+        else
+        {
+          lcd.print(F("No mode avail."));
+        }
         break;
       case 3:
         lcd.print(F("Color: "));
