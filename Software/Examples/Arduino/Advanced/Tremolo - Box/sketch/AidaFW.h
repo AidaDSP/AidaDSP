@@ -21,18 +21,20 @@
 #ifndef _AIDAFW_H_
 #define _AIDAFW_H_
 
+#define ADAU170x
 #include <AidaDSP.h>
 
 #define DEVICE_ADDR 0x6C
 #define DEVICE_ADDR_7bit DEVICE_ADDR>>1
-#define ADAU170x
+
 
 
 #define CoreRegisterR0Addr 	2076
 #define CoreRegisterR0Size 	2
 const PROGMEM unsigned char CoreRegisterR0Data[2]={0x00, 0x18};
 
-#define ProgramDataAddr 	1024
+
+#define ProgramDataAddr 	1024
 #define ProgramDataSize 	5120
 const PROGMEM unsigned char ProgramDataData[5120]={
 0x00, 0x00, 0x00, 0x00, 0x01, 
@@ -1060,7 +1062,8 @@ const PROGMEM unsigned char ProgramDataData[5120]={
 0x00, 0x00, 0x00, 0x00, 0x01, 
 0x00, 0x00, 0x00, 0x00, 0x01};
 
-#define regParamAddr 	0
+
+#define regParamAddr 	0
 #define regParamSize 	4096
 const PROGMEM unsigned char regParamData[4096]={
 0x00, 0x00, 0x00, 0x00, 
@@ -2088,15 +2091,18 @@ const PROGMEM unsigned char regParamData[4096]={
 0x00, 0x00, 0x00, 0x00, 
 0x00, 0x00, 0x00, 0x00};
 
-#define HWConFigurationAddr 	2076
+
+#define HWConFigurationAddr 	2076
 #define HWConFigurationSize 	24
 const PROGMEM unsigned char HWConFigurationData[24]={0x00, 0x18, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
 
-#define CoreRegisterR4Addr 	2076
+
+#define CoreRegisterR4Addr 	2076
 #define CoreRegisterR4Size 	2
 const PROGMEM unsigned char CoreRegisterR4Data[2]={0x00, 0x1C};
 
-#define MasterVol 	55
+
+#define MasterVol 	55
 #define Sawtooth1 	1
 #define Tone1 	3
 #define Triangle1 	6
