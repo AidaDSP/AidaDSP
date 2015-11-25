@@ -21,12 +21,11 @@
 #ifndef _AIDAFW_H_
 #define _AIDAFW_H_
 
-#define ADAU170x
 #include <AidaDSP.h>
 
 #define DEVICE_ADDR 0x6C
 #define DEVICE_ADDR_7bit DEVICE_ADDR>>1
-
+#define ADAU170x
 
 
 #define CoreRegisterR0Addr 	2076
