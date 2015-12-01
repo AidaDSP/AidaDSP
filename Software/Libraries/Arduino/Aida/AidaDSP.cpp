@@ -99,31 +99,20 @@ float processencoder(float minval, float maxval, int32_t pulses)
 {
   float val = 0.00;
   
-  if(minval < 0)
+  if(minval < 0 && maxval <= 0)
   {
-    if(pulses >= 0)
+    if(pulses>=0)
+      return maxval;
+    else
     {
-      if(pulses == 0) 
-        return 0.00;
+      val = ((abs(pulses)*(minval-maxval))/max_number_of_pulses)+maxval;
+      if(val < minval)
+        return minval;
       else
-	  {
-        val = pulses*(maxval/max_number_of_pulses);
-		if(val > maxval)
-		  return maxval;
-		else
-		  return val; 
-	  }
+        return val;
     }
-    else // pulses < 0
-    {
-      val = abs(pulses)*(minval/max_number_of_pulses);
-	  if(val < minval)
-		return minval;
-	  else
-		return val;
-    } 
   }
-  else // minval >= 0
+  else if(minval >= 0 && maxval > 0)
   {
     if(pulses >= 0)
     {
@@ -132,12 +121,36 @@ float processencoder(float minval, float maxval, int32_t pulses)
       else // pulses > 0
       {
         val = (pulses*((maxval-minval)/max_number_of_pulses))+minval;
-		if(val > maxval)
-		  return maxval;
-		else
-		  return val;
+        if(val > maxval)
+          return maxval;
+        else
+          return val;
       }
     }
+  }
+  else if(minval < 0 && maxval > 0)
+  {
+    if(pulses >= 0)
+      {
+        if(pulses == 0) 
+          return 0.00;
+        else
+        {
+          val = pulses*(maxval/max_number_of_pulses);
+          if(val > maxval)
+            return maxval;
+          else
+            return val; 
+        }
+      }
+      else // pulses < 0
+      {
+        val = abs(pulses)*(minval/max_number_of_pulses);
+        if(val < minval)
+          return minval;
+        else
+          return val;
+      }    
   }
 }
 
