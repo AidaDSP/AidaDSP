@@ -9,6 +9,7 @@ GUI is simple but powerful enough for many of your audio projects.
 				FX disable/enable and circular property selector to modify one parameter at a time
 
 BASICS - these examples show the basic usage of the Aida DSP API when used with Arduino and Energia
+- Tutorial_0  dsp gpio/led control
 - Tutorial_1	master volume control 
 - Tutorial_2	1st order equalizer 
 - Tutorial_3	2nd order equalizer (4-band graphic equalizer with selectable Q, f, gain)
