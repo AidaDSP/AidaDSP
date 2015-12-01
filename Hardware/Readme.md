@@ -18,6 +18,8 @@ __Used Pins VS Platforms__
 
 Arduino Uno/Mega/Due | TivaC (TM4C123) | Function
 -------------------- | --------------- | -------- 
+SCL1 | SCL(0) | I2C SCL
+SDA1 | SDA(0) | I2C SDA
 2 | PA_6 | ENCB
 3 | PA_7 | ENCA
 4 | PF_4 (PUSH1) | ENC_PUSH
