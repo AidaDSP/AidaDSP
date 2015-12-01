@@ -5,6 +5,7 @@ __Leds__
 - LED2 goes to MP10
 - LED3 goes to MP11
 
+
 __Dipswitch I2C Addresses__
 
 Dip1 (Addr0) | Dip2 (Addr1) | I2C DSP Address (W)
