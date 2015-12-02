@@ -1,22 +1,22 @@
-//VERSION 16.11.2015 14:12 P.M.
+//VERSION 27.11.2015 11:00 A.M.
 /*
- AIDA_header_file_generator.java - Aida DSP Java Class
- Copyright (c) 2015 Gaetano Grano.  All right reserved.
+  AIDA_header_file_generator.java - Aida DSP Java Class
+Copyright (c) 2015 Gaetano Grano.  All right reserved.
 
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 2.1 of the License, or (at your option) any later version.
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
 
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
 
- You should have received a copy of the GNU Lesser General Public
- License along with this library; if not, write to the Free Software
- Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- */
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+*/
 
 package AIDA;
 
@@ -32,6 +32,7 @@ import java.util.StringTokenizer;
 import java.util.Vector;
 
 import javax.swing.JButton;
+import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
@@ -52,8 +53,9 @@ public class AIDA_header_file_generator extends Frame implements ActionListener 
 	private String OSName, OSversion, OSarchitecture, JVruntypeVersion;
 	public static boolean okButtonPressed = false;
 	private String[] addresses_vector = new String[4];
-	private static String version = "VERSION 16.11.2015 14:12 P.M.";
+	private static String version = "VERSION 27.11.2015 11:00 A.M.";
 	static String blackListChars = "[-. /|><()=%&?!*+]";
+	
 
 	// static String strLine;
 
@@ -94,6 +96,7 @@ public class AIDA_header_file_generator extends Frame implements ActionListener 
 
 		// first combo
 		ComboBox conmbo = new ComboBox();
+		
 		while (okButtonPressed == false) {
 			// I whait until you press OK button and select an micro
 			// Do NOT erase next four code row!!!!!!
@@ -257,6 +260,7 @@ public class AIDA_header_file_generator extends Frame implements ActionListener 
 		int djitter_count = 0;
 		int Run_Bit_count = 0;
 		boolean in_ModuleParameter = false;
+		boolean pull_in_vector=true;
 		boolean in_Cell = false;
 		String buf, prefix, suffix, name = null, address, size;
 		String strLine;
@@ -308,8 +312,10 @@ public class AIDA_header_file_generator extends Frame implements ActionListener 
 		strLine = reader.readLine(); // <IC>
 		strLine = reader.readLine(); // <Name>IC 1</Name>
 
-		while ((strLine = reader.readLine()) != null) {
-
+		while (((strLine = reader.readLine()) != null) && (strLine.contains("<Name>IC 2</Name>"))==false) {			
+			
+			pull_in_vector=true;
+			
 			if (strLine.contains("<ModuleParameter>") == true) // I am in
 																// ModuleParameter
 																// so I will
@@ -327,8 +333,10 @@ public class AIDA_header_file_generator extends Frame implements ActionListener 
 																		// next
 																		// field
 				in_ModuleParameter = false;
-			else if (strLine.contains("<CellName>") == true)
+			else if (strLine.contains("<CellName>") == true){
 				in_Cell = true;
+				pull_in_vector=false; //this element will not compare in name_vector
+			}
 
 			prefix = suffix = "";
 			if ((strLine.contains("Name>") == true)
@@ -387,7 +395,7 @@ public class AIDA_header_file_generator extends Frame implements ActionListener 
 					name = name.substring(name.indexOf('>') + 1,
 							name.indexOf('<')); // ReadBackAlg1
 				}
-
+				
 				// Erase IC 1. and blank space
 				name = name.replace("IC 1.", "");
 				name = name.replace(" ", "");
@@ -403,7 +411,8 @@ public class AIDA_header_file_generator extends Frame implements ActionListener 
 				strLine = strLine.trim(); // erase eventually blank space
 				address = strLine.substring(9, strLine.length() - 10);
 
-				name_vector.add(prefix + name + suffix); // I load all name in a
+				if(pull_in_vector==true)
+					name_vector.add(prefix + name + suffix); // I load all name in a
 															// vector
 
 				// now I write on file
