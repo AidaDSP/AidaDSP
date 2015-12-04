@@ -293,7 +293,12 @@ public class AIDA_header_file_generator extends Frame implements ActionListener 
 
 		fw.write("#ifndef _AIDAFW_H_\n");
 		fw.write("#define _AIDAFW_H_\n\n");
-		fw.write("#include <AidaDSP.h>\n\n");
+		if (selectedDSP.compareTo("ADAU170x") == 0) {
+			fw.write("#include <AidaDSP.h>\n\n");
+		}
+		else if (selectedDSP.compareTo("ADAU144x") == 0){
+			fw.write("#include <AidaDSP2.h>\n\n");
+		}
 		fw.write("#define DEVICE_ADDR " + selectAddress + "\n");
 		fw.write("#define DEVICE_ADDR_7bit DEVICE_ADDR>>1\n");
 		fw.write("#define " + selectedDSP + "\n\n\n");
