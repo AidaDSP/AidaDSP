@@ -57,14 +57,15 @@
 #define FREQMAX      35.0f // Hz
 #define BPMMIN        5.0f
 #define BPMMAX      260.0f
-//#define FREQMIN  1000.0f // Hz
-//#define FREQMAX 10000.0f // Hz
 #define COLORMIN    -15.00f // dB
 #define COLORMAX     15.00f // dB
+#define DEPTHMIN      0.0f
+#define DEPTHMAX      1.0f
 #define POT_THR      10
 
 #define ON 1
 #define OFF 0
+#define DEBOUNCETIME  50
 
 #define POT1 A0
 #define POT2 A1
@@ -87,7 +88,7 @@ void setFrequency(void);
 void setLfo(void);
 void setColor(float);
 void setVolume(float);
-void depth(void);
+void setDepth(void);
 void print_menu_putty(void);
 void print_menu_lcd(void);
 
@@ -119,9 +120,6 @@ float frequency = 0.00;
 float bpm = 0.00;
 float colorvalue = 0.00;
 float depthvalue = 0.00;
-float readback = 0.00;
-float readbackmin = 0.00;
-float readbackmax = 0.00;
 equalizer_t color;
 
 uint16_t pot1 = 0;
@@ -144,6 +142,8 @@ uint8_t push_1_lock = 0;
 uint8_t push_2_lock = 0;
 
 uint8_t reinitdisplaycounter = 0;
+
+equalizer_t equ;
 
 // Configure pins for LCD display
 LiquidCrystal lcd(17, 16, 15, 14, 6, 7); // RS, EN, D4, D5, D6, D7
@@ -188,18 +188,26 @@ void setup()
   delay(5);
   check_config(); // !!!Debug!!!
   delay(2);
-  spettacolino();
-  MasterVolumeMono(DEVICE_ADDR_7bit, MasterVol, 1.00);    // With DAC in mute, set volume to 0dB
-  delay(1);   
+  spettacolino();  
   AIDA_WRITE_REGISTER_BLOCK(DEVICE_ADDR_7bit, CoreRegisterR4Addr, CoreRegisterR4Size, CoreRegisterR4Data);    // Mute DAC Off
   
   // Set parameters to operate in normal mode 
-  gainCell(DEVICE_ADDR_7bit, Depth, 0.5);
+  mode = 1;
+  gainCell(DEVICE_ADDR_7bit, DepthAddr, 0.5);
   delayMicroseconds(100);
-  dc_source(DEVICE_ADDR_7bit, Bias, 0.5);
+  dc_source(DEVICE_ADDR_7bit, BiasAddr, 0.5);
   delayMicroseconds(100);
-  mux(DEVICE_ADDR_7bit, Abs, 2, 2); // Abs Off
+  mux(DEVICE_ADDR_7bit, AbsAddr, 2, 2); // Abs Off
   delayMicroseconds(100);
+ 
+  // Initialize LPF filters 
+  equ.onoff = ON;
+  equ.type = Lowpass;
+  equ.gain = 0.00;
+  equ.f0 = 10.0; // 10Hz LPF on saw and square waveforms
+  EQ1stOrd(DEVICE_ADDR_7bit, LPF1Addr, &equ);
+  delayMicroseconds(100);
+  EQ1stOrd(DEVICE_ADDR_7bit, LPF2Addr, &equ);  
   
   // Bypass status init = disable
   bypass = 0;
@@ -239,20 +247,20 @@ void loop()
   }
   else if(push_e_function==2)
   {
-    bypass ^=1; 
+    // No function programmed
   }
   
   if(digitalRead(PUSH_1)==LOW)
   {
-    delay(50);  // debounce
+    delay(50);
     if(digitalRead(PUSH_1)==LOW)
     {
       if(push_1_lock != 1)
       {
         push_1_lock = 1;
-        mode--;
-        mode ^= 1; 
-        mode++; // Toggle between 1 and 2
+        mode++;
+        if(mode > 4)
+          mode = 1;
       }
     }
   }
@@ -284,7 +292,7 @@ void loop()
     clearAndHome();    // !!!Warning use with real terminal emulation program
     Serial.println(F("********************************"));
     Serial.println(F("*    User control interface    *"));
-    Serial.println(F("*    AIDA Tremolo Sketch       *"));
+    Serial.println(F("*     AIDA Tremolo Sketch      *"));
     Serial.println(F("********************************"));
     Serial.write('\n');
     Serial.print(F("Encoder pulses: "));
@@ -297,19 +305,6 @@ void loop()
       lcd.begin(16, 2); // set up the LCD's number of columns and rows
       reinitdisplaycounter = 0;
     }
-    /*readbackcount = (ReadBackAlg1Data[0]<<8) | (ReadBackAlg1Data[1]&0xFF);
-    readBack(DEVICE_ADDR_7bit, ReadBackAlg1, readbackcount, &readback);
-    if(readback > readbackmax)
-      readbackmax = readback;
-    if(readback < readbackmin)
-      readbackmin = readback;
-    Serial.print("Raw: ");
-    Serial.println(readback, 2);
-    Serial.print("Max: ");
-    Serial.println(readbackmax, 2);
-    Serial.print("Min: ");
-    Serial.println(readbackmin, 2);
-    Serial.println();*/
     
     setMode(); // Using PUSH_1 and LED_1
     setBypass(); // Using PUSH_2 and LED_2
@@ -440,15 +435,15 @@ void loop()
       } 
       //set_regulation_precision(OFF); // Rough regulation
       depthpulses = getPulses();
-      depthvalue = processencoder(-1.0, 1.0, depthpulses);
-      depth(); 
+      depthvalue = processencoder(DEPTHMIN, DEPTHMAX, depthpulses);
+      //setDepth(); // !!!Debug!!!
       break;    
     } // End switch func_counter
 
     // Display information for user
     print_menu_putty();
     print_menu_lcd();
-
+    
     prevtimec = timec;
   } // End if 1000ms tick
 } // End void loop
@@ -659,8 +654,8 @@ void setMix(uint8_t percent)
     value = percent/100.00;
   
     // MIX
-    AIDA_SAFELOAD_WRITE_VALUE(DEVICE_ADDR_7bit, Mix, false, value);  // Dry	 
-    AIDA_SAFELOAD_WRITE_VALUE(DEVICE_ADDR_7bit, Mix+1, true, 1.00-value);   // Wet
+    AIDA_SAFELOAD_WRITE_VALUE(DEVICE_ADDR_7bit, MixAddr, false, value);  // Dry	 
+    AIDA_SAFELOAD_WRITE_VALUE(DEVICE_ADDR_7bit, MixAddr+1, true, 1.00-value);   // Wet
   }
 }
 
@@ -670,13 +665,13 @@ void setFrequency(void)
   
   if(frequency != oldfrequency) // Freq change, update all oscillators
   { 
-    triangle_source(DEVICE_ADDR_7bit, Triangle1, frequency*2.00);
+    triangle_source(DEVICE_ADDR_7bit, Triangle1Addr, frequency*2.00);
     delayMicroseconds(10);
-    sine_source(DEVICE_ADDR_7bit, Tone1, frequency);
+    sine_source(DEVICE_ADDR_7bit, Tone1Addr, frequency);
     delayMicroseconds(10);
-    sawtooth_source(DEVICE_ADDR_7bit, Sawtooth1, frequency);
+    sawtooth_source(DEVICE_ADDR_7bit, Sawtooth1Addr, frequency);
     delayMicroseconds(10);
-    square_source(DEVICE_ADDR_7bit, Square1, frequency);
+    square_source(DEVICE_ADDR_7bit, Square1Addr, frequency);
     delayMicroseconds(10);
     
     oldfrequency = frequency;
@@ -706,11 +701,8 @@ void setLfo(void)
   
   if(lfotypeold != lfotype)
   {
-    mux(DEVICE_ADDR_7bit, LfoSelector, lfotype, 4);
+    mux(DEVICE_ADDR_7bit, LfoSelectorAddr, lfotype, 4);
     lfotypeold = lfotype;
-    
-    readbackmax = 0.00; // Debug !!!
-    readbackmin = 0.00; // debug !!!
   }
 }
 
@@ -728,43 +720,43 @@ void setMode(void)
     switch(mode)
     {
     case 1:  
-      mux(DEVICE_ADDR_7bit, Harmonic, 2, 2); // NO Harmonic
-      mux(DEVICE_ADDR_7bit, Opto, 2, 2); // NO Opto
-      gainCell(DEVICE_ADDR_7bit, Depth, 0.5);
+      mux(DEVICE_ADDR_7bit, HarmonicAddr, 2, 2); // NO Harmonic
+      mux(DEVICE_ADDR_7bit, OptoAddr, 2, 2); // NO Opto
+      gainCell(DEVICE_ADDR_7bit, DepthAddr, 0.5);
       delayMicroseconds(100);
-      dc_source(DEVICE_ADDR_7bit, Bias, 0.5);
+      dc_source(DEVICE_ADDR_7bit, BiasAddr, 0.5);
       delayMicroseconds(100);
-      mux(DEVICE_ADDR_7bit, Abs, 2, 2); // Abs Off
+      mux(DEVICE_ADDR_7bit, AbsAddr, 2, 2); // Abs Off
       delayMicroseconds(100);
       break;
     case 2:
-      mux(DEVICE_ADDR_7bit, Harmonic, 1, 2); // SI Harmonic
-      mux(DEVICE_ADDR_7bit, Opto, 2, 2); // NO Opto
-      gainCell(DEVICE_ADDR_7bit, Depth, 1.0);
+      mux(DEVICE_ADDR_7bit, HarmonicAddr, 1, 2); // SI Harmonic
+      mux(DEVICE_ADDR_7bit, OptoAddr, 2, 2); // NO Opto
+      gainCell(DEVICE_ADDR_7bit, DepthAddr, 1.0);
       delayMicroseconds(100);
-      dc_source(DEVICE_ADDR_7bit, Bias, 0.0);
+      dc_source(DEVICE_ADDR_7bit, BiasAddr, 0.0);
       delayMicroseconds(100);
-      mux(DEVICE_ADDR_7bit, Abs, 1, 2); // Abs On
+      mux(DEVICE_ADDR_7bit, AbsAddr, 1, 2); // Abs On
       delayMicroseconds(100);
       break;
     case 3:
-      mux(DEVICE_ADDR_7bit, Harmonic, 2, 2); // NO Harmonic
-      mux(DEVICE_ADDR_7bit, Opto, 1, 2); // SI Opto
-      gainCell(DEVICE_ADDR_7bit, Depth, 0.5);
+      mux(DEVICE_ADDR_7bit, HarmonicAddr, 2, 2); // NO Harmonic
+      mux(DEVICE_ADDR_7bit, OptoAddr, 1, 2); // SI Opto
+      gainCell(DEVICE_ADDR_7bit, DepthAddr, 0.5);
       delayMicroseconds(100);
-      dc_source(DEVICE_ADDR_7bit, Bias, 0.5);
+      dc_source(DEVICE_ADDR_7bit, BiasAddr, 0.5);
       delayMicroseconds(100);
-      mux(DEVICE_ADDR_7bit, Abs, 2, 2); // Abs Off
+      mux(DEVICE_ADDR_7bit, AbsAddr, 2, 2); // Abs Off
       delayMicroseconds(100);
       break;
     case 4:
-      mux(DEVICE_ADDR_7bit, Harmonic, 1, 2); // SI Harmonic
-      mux(DEVICE_ADDR_7bit, Opto, 1, 2); // SI Opto
-      gainCell(DEVICE_ADDR_7bit, Depth, 1.0);
+      mux(DEVICE_ADDR_7bit, HarmonicAddr, 1, 2); // SI Harmonic
+      mux(DEVICE_ADDR_7bit, OptoAddr, 1, 2); // SI Opto
+      gainCell(DEVICE_ADDR_7bit, DepthAddr, 1.0);
       delayMicroseconds(100);
-      dc_source(DEVICE_ADDR_7bit, Bias, 0.0);
+      dc_source(DEVICE_ADDR_7bit, BiasAddr, 0.0);
       delayMicroseconds(100);
-      mux(DEVICE_ADDR_7bit, Abs, 1, 2); // Abs On
+      mux(DEVICE_ADDR_7bit, AbsAddr, 1, 2); // Abs On
       delayMicroseconds(100);
       break;
     }
@@ -772,21 +764,23 @@ void setMode(void)
   }
 }
 
-void depth(void)
+void setDepth(void)
 { 
   static float olddepthvalue = 0.00;
+  float temp = 0.00;
   
   if(olddepthvalue != depthvalue)
   {
     if(mode==2 || mode==4) // Harmonic mode, scale lfo
     {
-      gainCell(DEVICE_ADDR_7bit, Depth, 1.0-depthvalue);
+      gainCell(DEVICE_ADDR_7bit, DepthAddr, 1.0-depthvalue);
     }
     else // Normal mode, scale lfo and bias together
     {
-      dc_source(DEVICE_ADDR_7bit, Bias, depthvalue);
+      temp = (1.0-depthvalue)*0.5;
+      gainCell(DEVICE_ADDR_7bit, DepthAddr, temp);
       delayMicroseconds(100);
-      gainCell(DEVICE_ADDR_7bit, Depth, 1.0-depthvalue);
+      dc_source(DEVICE_ADDR_7bit, BiasAddr, 0.5+(depthvalue*0.25));
     }
     olddepthvalue = depthvalue;
   }
@@ -863,6 +857,16 @@ void print_menu_lcd(void)
     lcd.print(F("BYPASS"));
   else
   {
+    if(mode == 1)
+      lcd.print(F("Tremolo - Normal"));
+    else if(mode == 2)
+      lcd.print(F("Tremolo - Harm."));
+    else if(mode == 3)
+      lcd.print(F("Tremolo - Opto"));
+    else if(mode == 4)
+      lcd.print(F("Tremolo - OptHrm."));
+    
+    lcd.setCursor(0, 1); 
     switch(func_counter)
     {
       case 0:
@@ -925,12 +929,12 @@ void setBypass(void)
   {
     if(bypass == ON)
     {
-      mux(DEVICE_ADDR_7bit, BypassSelector, 2, 2); // Bypass 
+      mux(DEVICE_ADDR_7bit, BypassSelectorAddr, 2, 2); // Bypass 
       digitalWrite(LED_2, HIGH);
     }
     else
     {
-      mux(DEVICE_ADDR_7bit, BypassSelector, 1, 2); // Fx
+      mux(DEVICE_ADDR_7bit, BypassSelectorAddr, 1, 2); // Fx
       digitalWrite(LED_2, LOW);
     }
     oldbypass = bypass;
@@ -947,7 +951,7 @@ void setColor(float boost)
     color.f0 = 1200.00;
     color.boost = boost;
     color.type = HighShelf;
-    EQ2ndOrd(DEVICE_ADDR_7bit, Color, &color);
+    EQ2ndOrd(DEVICE_ADDR_7bit, ColorAddr, &color);
     
     oldboost = boost;
   }
@@ -962,7 +966,7 @@ void setVolume(float boostdb)
   {
     
     boostlinear = pow(10, boostdb/20.0);
-    MasterVolumeMono(DEVICE_ADDR_7bit, MasterVol, boostlinear);
+    MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolAddr, boostlinear);
     
     oldboostdb = boostdb;
   }
