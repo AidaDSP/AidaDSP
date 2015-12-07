@@ -2,7 +2,7 @@
   AidaDSP.h - Aida DSP library
  Copyright (c) 2015 Massimo Pennazio.  All right reserved.
  
- Version: 0.1 ADAU170x
+ Version: 0.11 ADAU170x
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -169,6 +169,7 @@ void CompressorRMS(uint8_t dspAddress, uint16_t address, compressor_t* compresso
 void CompressorPeak(uint8_t dspAddress, uint16_t address, compressor_t* compressor);   
 void readBack(uint8_t dspAddress, uint16_t address, uint16_t capturecount, float *value);
 void mux(uint8_t dspAddress, uint16_t address, uint8_t select, uint8_t nchannels);
+void muxnoiseless(uint8_t dspAddress, uint16_t address, uint8_t select);
 void hard_clip(uint8_t dspAddress, uint16_t address, float th_high, float th_low);
 void soft_clip(uint8_t dspAddress, uint16_t address, float alpha);
 void dc_source(uint8_t dspAddress, uint16_t address, float value);

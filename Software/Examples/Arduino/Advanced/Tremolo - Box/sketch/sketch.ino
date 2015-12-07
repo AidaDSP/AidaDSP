@@ -61,7 +61,7 @@
 #define COLORMAX     15.00f // dB
 #define DEPTHMIN      0.0f
 #define DEPTHMAX      1.0f
-#define POT_THR      10
+#define POT_THR       4
 
 #define ON 1
 #define OFF 0
@@ -144,6 +144,23 @@ uint8_t push_2_lock = 0;
 uint8_t reinitdisplaycounter = 0;
 
 equalizer_t equ;
+// Pot Filter 1
+uint16_t adcvalue1 = 0;
+uint32_t sum1 = 0;
+uint32_t out1 = 0;
+// Pot Filter 2
+uint16_t adcvalue2 = 0;
+uint32_t sum2 = 0;
+uint32_t out2 = 0;
+// Pop Filter 3
+uint16_t adcvalue3 = 0;
+uint32_t sum3 = 0;
+uint32_t out3 = 0;
+// Pop Filter 4
+uint16_t adcvalue4 = 0;
+uint32_t sum4 = 0;
+uint32_t out4 = 0;
+          
 
 // Configure pins for LCD display
 LiquidCrystal lcd(17, 16, 15, 14, 6, 7); // RS, EN, D4, D5, D6, D7
@@ -197,7 +214,7 @@ void setup()
   delayMicroseconds(100);
   dc_source(DEVICE_ADDR_7bit, BiasAddr, 0.5);
   delayMicroseconds(100);
-  mux(DEVICE_ADDR_7bit, AbsAddr, 2, 2); // Abs Off
+  muxnoiseless(DEVICE_ADDR_7bit, AbsAddr, 2); // Abs Off
   delayMicroseconds(100);
  
   // Initialize LPF filters 
@@ -217,6 +234,55 @@ void setup()
 void loop()
 {
   // put your main code here, to run repeatedly:
+  
+  adcvalue1 = analogRead(POT1);
+  sum1 = ((((64)-1) * sum1)+((uint32_t)adcvalue1*(64)))/(64);
+  out1 = sum1/64;
+  pot1 = out1;
+  if(!isinrange(pot1, oldpot1, POT_THR))
+  {
+    func_counter=0;
+    oldpot1 = pot1;
+    bpm = processpot(BPMMIN, BPMMAX, pot1);
+    frequency = bpm / 60.0; // Bpm to frequency conversion
+    setFrequency();
+  }
+  
+  adcvalue2 = analogRead(POT2);
+  sum2 = ((((64)-1) * sum2)+((uint32_t)adcvalue2*(64)))/(64);
+  out2 = sum2/64;
+  pot2 = out2;
+  if(!isinrange(pot2, oldpot2, POT_THR))
+  {
+    func_counter=5;
+    oldpot2 = pot2;
+    mix = (uint8_t)processpot(0.0, 100.0, pot2);
+    setMix(mix);
+  }
+  
+  adcvalue3 = analogRead(POT3);
+  sum3 = ((((64)-1) * sum3)+((uint32_t)adcvalue3*(64)))/(64);
+  out3 = sum3/64;
+  pot3 = out3;
+  if(!isinrange(pot3, oldpot3, POT_THR))
+  {
+    func_counter=3;
+    oldpot3 = pot3;
+    colorvalue = processpot(COLORMIN, COLORMAX, pot3);
+    setColor(colorvalue);
+  }
+
+  adcvalue4 = analogRead(POT4);
+  sum4 = ((((64)-1) * sum4)+((uint32_t)adcvalue4*(64)))/(64);
+  out4 = sum4/64;
+  pot4 = out4;
+  if(!isinrange(pot4, oldpot4, POT_THR))
+  {
+    func_counter=4;
+    oldpot4 = pot4;
+    volumedB = processpot(VOLMIN, VOLMAX, pot4);
+    setVolume(volumedB);
+  }
 
   if(digitalRead(ENC_PUSH)==LOW)  
   {
@@ -308,43 +374,6 @@ void loop()
     
     setMode(); // Using PUSH_1 and LED_1
     setBypass(); // Using PUSH_2 and LED_2
-    
-    pot1 = analogRead(POT1);
-    if(!isinrange(pot1, oldpot1, POT_THR))
-    {
-      func_counter=0;
-      oldpot1 = pot1;
-      bpm = processpot(BPMMIN, BPMMAX, pot1);
-      frequency = bpm / 60.0; // Bpm to frequency conversion
-      setFrequency();
-    }
-    
-    pot2 = analogRead(POT2);
-    if(!isinrange(pot2, oldpot2, POT_THR))
-    {
-      func_counter=5;
-      oldpot2 = pot2;
-      mix = (uint8_t)processpot(0.0, 100.0, pot2);
-      setMix(mix);
-    }
-    
-    pot3 = analogRead(POT3);
-    if(!isinrange(pot3, oldpot3, POT_THR))
-    {
-      func_counter=3;
-      oldpot3 = pot3;
-      colorvalue = processpot(COLORMIN, COLORMAX, pot3);
-      setColor(colorvalue);
-    }
-    
-    pot4 = analogRead(POT4);
-    if(!isinrange(pot4, oldpot4, POT_THR))
-    {
-      func_counter=4;
-      oldpot4 = pot4;
-      volumedB = processpot(VOLMIN, VOLMAX, pot4);
-      setVolume(volumedB);
-    }
     
     if(old_func_counter != func_counter)
     {
@@ -701,7 +730,7 @@ void setLfo(void)
   
   if(lfotypeold != lfotype)
   {
-    mux(DEVICE_ADDR_7bit, LfoSelectorAddr, lfotype, 4);
+    muxnoiseless(DEVICE_ADDR_7bit, LfoSelectorAddr, lfotype);
     lfotypeold = lfotype;
   }
 }
@@ -720,43 +749,43 @@ void setMode(void)
     switch(mode)
     {
     case 1:  
-      mux(DEVICE_ADDR_7bit, HarmonicAddr, 2, 2); // NO Harmonic
-      mux(DEVICE_ADDR_7bit, OptoAddr, 2, 2); // NO Opto
+      muxnoiseless(DEVICE_ADDR_7bit, HarmonicAddr, 2); // NO Harmonic
+      muxnoiseless(DEVICE_ADDR_7bit, OptoAddr, 2); // NO Opto
       gainCell(DEVICE_ADDR_7bit, DepthAddr, 0.5);
       delayMicroseconds(100);
       dc_source(DEVICE_ADDR_7bit, BiasAddr, 0.5);
       delayMicroseconds(100);
-      mux(DEVICE_ADDR_7bit, AbsAddr, 2, 2); // Abs Off
+      muxnoiseless(DEVICE_ADDR_7bit, AbsAddr, 2); // Abs Off
       delayMicroseconds(100);
       break;
     case 2:
-      mux(DEVICE_ADDR_7bit, HarmonicAddr, 1, 2); // SI Harmonic
-      mux(DEVICE_ADDR_7bit, OptoAddr, 2, 2); // NO Opto
+      muxnoiseless(DEVICE_ADDR_7bit, HarmonicAddr, 1); // SI Harmonic
+      muxnoiseless(DEVICE_ADDR_7bit, OptoAddr, 2); // NO Opto
       gainCell(DEVICE_ADDR_7bit, DepthAddr, 1.0);
       delayMicroseconds(100);
       dc_source(DEVICE_ADDR_7bit, BiasAddr, 0.0);
       delayMicroseconds(100);
-      mux(DEVICE_ADDR_7bit, AbsAddr, 1, 2); // Abs On
+      muxnoiseless(DEVICE_ADDR_7bit, AbsAddr, 1); // Abs On
       delayMicroseconds(100);
       break;
     case 3:
-      mux(DEVICE_ADDR_7bit, HarmonicAddr, 2, 2); // NO Harmonic
-      mux(DEVICE_ADDR_7bit, OptoAddr, 1, 2); // SI Opto
+      muxnoiseless(DEVICE_ADDR_7bit, HarmonicAddr, 2); // NO Harmonic
+      muxnoiseless(DEVICE_ADDR_7bit, OptoAddr, 1); // SI Opto
       gainCell(DEVICE_ADDR_7bit, DepthAddr, 0.5);
       delayMicroseconds(100);
       dc_source(DEVICE_ADDR_7bit, BiasAddr, 0.5);
       delayMicroseconds(100);
-      mux(DEVICE_ADDR_7bit, AbsAddr, 2, 2); // Abs Off
+      muxnoiseless(DEVICE_ADDR_7bit, AbsAddr, 2); // Abs Off
       delayMicroseconds(100);
       break;
     case 4:
-      mux(DEVICE_ADDR_7bit, HarmonicAddr, 1, 2); // SI Harmonic
-      mux(DEVICE_ADDR_7bit, OptoAddr, 1, 2); // SI Opto
+      muxnoiseless(DEVICE_ADDR_7bit, HarmonicAddr, 1); // SI Harmonic
+      muxnoiseless(DEVICE_ADDR_7bit, OptoAddr, 1); // SI Opto
       gainCell(DEVICE_ADDR_7bit, DepthAddr, 1.0);
       delayMicroseconds(100);
       dc_source(DEVICE_ADDR_7bit, BiasAddr, 0.0);
       delayMicroseconds(100);
-      mux(DEVICE_ADDR_7bit, AbsAddr, 1, 2); // Abs On
+      muxnoiseless(DEVICE_ADDR_7bit, AbsAddr, 1); // Abs On
       delayMicroseconds(100);
       break;
     }
@@ -929,12 +958,12 @@ void setBypass(void)
   {
     if(bypass == ON)
     {
-      mux(DEVICE_ADDR_7bit, BypassSelectorAddr, 2, 2); // Bypass 
+      muxnoiseless(DEVICE_ADDR_7bit, BypassSelectorAddr, 2); // Bypass 
       digitalWrite(LED_2, HIGH);
     }
     else
     {
-      mux(DEVICE_ADDR_7bit, BypassSelectorAddr, 1, 2); // Fx
+      muxnoiseless(DEVICE_ADDR_7bit, BypassSelectorAddr, 1); // Fx
       digitalWrite(LED_2, LOW);
     }
     oldbypass = bypass;
@@ -964,7 +993,6 @@ void setVolume(float boostdb)
   
   if(boostdb != oldboostdb)
   {
-    
     boostlinear = pow(10, boostdb/20.0);
     MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolAddr, boostlinear);
     

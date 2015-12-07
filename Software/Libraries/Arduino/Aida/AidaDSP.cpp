@@ -2,7 +2,7 @@
   AidaDSP.cpp - Aida DSP library
  Copyright (c) 2015 Massimo Pennazio.  All right reserved.
  
- Version: 0.1 ADAU170x
+ Version: 0.11 ADAU170x
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -980,6 +980,30 @@ void mux(uint8_t dspAddress, uint16_t address, uint8_t select, uint8_t nchannels
     else
       AIDA_WRITE_VALUE(dspAddress, address++, 0.00);  
   }  
+}
+
+/**
+ * This function controls an audio multiplexer cell (switch audio signals)
+ * noiseless (clickless) version
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param select - the index (the signal) you want to switch to
+ */
+void muxnoiseless(uint8_t dspAddress, uint16_t address, uint8_t select)
+{
+  uint8_t buf[4];
+  uint32_t value;
+  
+  if(select==0)
+    value = 0;
+  else
+    value = (uint32_t)select-1; 
+  buf[0] = (value>>24)&0xFF; // MSB first
+  buf[1] = (value>>16)&0xFF;
+  buf[2] = (value>>8)&0xFF;
+  buf[3] = value&0xFF; 
+  
+  AIDA_WRITE_REGISTER(dspAddress, address, 4, buf);
 }
 
 /**
