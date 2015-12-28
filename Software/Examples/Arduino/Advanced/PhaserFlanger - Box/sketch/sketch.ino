@@ -48,7 +48,7 @@
 //#define FREQMAX 10000.0f // Hz
 #define COLORMIN -15.00f // dB
 #define COLORMAX 15.00f // dB
-#define POT_THR 10.0 // Threshold for filtering noise on pots (adcs)
+#define POT_THR 25.0 // Threshold for filtering noise on pots (adcs)
 
 #define ON 1
 #define OFF 0
