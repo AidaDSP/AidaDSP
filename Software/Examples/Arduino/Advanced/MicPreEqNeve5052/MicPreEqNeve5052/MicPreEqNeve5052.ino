@@ -1,8 +1,11 @@
 /*
  AIDA MicPreEqNeve5052 Sketch
  	
- This sketch is a Template to start coding with
- Aida DSP.
+ This sketch is a mic pre studio EQ inspired by Neve 5052. I've maintained original equalizer bands and range 
+ and I added one clipping stage immediately after gain stage (where it should be). I've added to 
+ the original design a THD injection section based on Chebyshev polynomials of 2nd and 3rd order. 
+ I'm looking to find a list of presets to be used with various instruments. 
+ The sketch is based on Template 2, then modified to fit my needs. 
  This sketch was written for Arduino, and will not work on other boards.
  	
  The circuit:
@@ -18,7 +21,7 @@
  Attenuation Out/In = 2.264, to have out = in you must provide 7.097dB of gain through DSP algorithm
  or externally with active LPF filter.
  
- created November 2014
+ created December 2015
  by Massimo Pennazio
  
  This example code is in the public domain.
@@ -196,7 +199,7 @@ void setup()
   setMix(param2_value); // Set Dry Signal Mix
   delayMicroseconds(100);
   
-  dc_source(DEVICE_ADDR_7bit, MicGainAddr, pow(10, param10_value/20.0)); // Set Mic Pre Gain 
+  gainCell(DEVICE_ADDR_7bit, MicGainAddr, pow(10, param10_value/20.0)); // Set Mic Pre Gain 
   delayMicroseconds(100);
   
   soft_clip(DEVICE_ADDR_7bit, SoftClipperAddr, param9_value); // Set Soft Clip 
@@ -449,7 +452,7 @@ void loop()
       }
       param10_pulses = getPulses();
       param10_value = processencoder(0.0, 24.0, param10_pulses);
-      dc_source(DEVICE_ADDR_7bit, MicGainAddr, pow(10, param10_value/20.0));
+      gainCell(DEVICE_ADDR_7bit, MicGainAddr, pow(10, param10_value/20.0));
       delayMicroseconds(100);
       // Do something, call Aida DSP API
       break;
