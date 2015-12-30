@@ -149,16 +149,16 @@ void loop()
         Serial.print(F(" Master Vol. : "));
         Serial.print(volume, 1);
         Serial.println(F("dB"));
-        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20)); // Call Aida DSP API with linear value from dB
+        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, volume/20)); // Call Aida DSP API with linear value from dB
       }
       else
       {
-        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20)); // To re-enable volume after mute switch off
+        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, volume/20)); // To re-enable volume after mute switch off
       }			
     }
     else if(mute == ON)
     {
-      MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, 0.00);
+      MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolumeAddr, 0.00);
       Serial.println(" mute on");
     }
     if(submenu==ON)
@@ -175,17 +175,17 @@ void loop()
       {
       case 1:
         Serial.println(F(" Distortion Off..."));
-        mux(DEVICE_ADDR_7bit, Mux, 1, 3);
+        mux(DEVICE_ADDR_7bit, MuxAddr, 1, 3);
         break;
       case 2:
         Serial.println(F(" Hard Clip..."));
-        hard_clip(DEVICE_ADDR_7bit, HardClip1, 0.5, -0.5);
-        mux(DEVICE_ADDR_7bit, Mux, 2, 3);
+        hard_clip(DEVICE_ADDR_7bit, HardClip1Addr, 0.5, -0.5);
+        mux(DEVICE_ADDR_7bit, MuxAddr, 2, 3);
         break;
       case 3:
         Serial.println(F(" Soft Clip..."));
-        soft_clip(DEVICE_ADDR_7bit, SoftClip1, 0.3);
-        mux(DEVICE_ADDR_7bit, Mux, 3, 3);
+        soft_clip(DEVICE_ADDR_7bit, SoftClip1Addr, 0.3);
+        mux(DEVICE_ADDR_7bit, MuxAddr, 3, 3);
         break;
       case 4:
         Serial.println(F(" Name this effect..."));

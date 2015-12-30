@@ -85,7 +85,7 @@ void setup()
   program_download();    // Here we load program, parameters and hardware configuration to DSP
   delay(20);
   spettacolino();
-  StateVariable(DEVICE_ADDR_7bit, StateVarFilter1, 1000.0, 0.71);  // Here write settings for State Variable Filter Cell
+  StateVariable(DEVICE_ADDR_7bit, StateVarFilter1Addr, 1000.0, 0.71);  // Here write settings for State Variable Filter Cell
 }
 
 void loop()
@@ -149,16 +149,16 @@ void loop()
         Serial.print(F(" Master Vol. : "));
         Serial.print(volume, 1);
         Serial.println(F("dB"));
-        MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20)); // Call Aida DSP API with linear value from dB
+        MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, volume/20)); // Call Aida DSP API with linear value from dB
       }
       else
       {
-        MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20)); // To re-enable volume after mute switch off
+        MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, volume/20)); // To re-enable volume after mute switch off
       }			
     }
     else if(mute == ON)
     {
-      MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolume, 0.00);
+      MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolumeAddr, 0.00);
       Serial.println(" mute on");
     }
     if(submenu==ON)
@@ -174,15 +174,15 @@ void loop()
       switch(preset)
       {
       case 1:
-        mux(DEVICE_ADDR_7bit, Mux, 1, 3); // Select 1 of 3 channels multiplexer
+        mux(DEVICE_ADDR_7bit, MuxAddr, 1, 3); // Select 1 of 3 channels multiplexer
         Serial.println(F(" State Variable Filter LP..."));
         break;
       case 2:
-        mux(DEVICE_ADDR_7bit, Mux, 2, 3); // Select 2 of 3 channels multiplexer
+        mux(DEVICE_ADDR_7bit, MuxAddr, 2, 3); // Select 2 of 3 channels multiplexer
         Serial.println(F(" State Variable Filter BP..."));
         break;
       case 3:
-        mux(DEVICE_ADDR_7bit, Mux, 3, 3); // Select 3 of 3 channels multiplexer
+        mux(DEVICE_ADDR_7bit, MuxAddr, 3, 3); // Select 3 of 3 channels multiplexer
         Serial.println(F(" State Variable Filter HP..."));
         break;
       case 4:

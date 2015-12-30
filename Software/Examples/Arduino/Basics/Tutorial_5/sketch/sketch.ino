@@ -199,11 +199,11 @@ void loop()
     {
       if(bypass == ON)
       {
-        mux(DEVICE_ADDR_7bit, Bypass, 2, 2); // Switch bypass mux
+        mux(DEVICE_ADDR_7bit, BypassAddr, 2, 2); // Switch bypass mux
       }
       else
       {
-        mux(DEVICE_ADDR_7bit, Bypass, 1, 2); // Switch bypass mux
+        mux(DEVICE_ADDR_7bit, BypassAddr, 1, 2); // Switch bypass mux
       }
       oldbypass = bypass;
     }
@@ -226,7 +226,7 @@ void loop()
       if(param1_value != comp1.threshold)
       {
         comp1.threshold = param1_value;
-        CompressorRMS(DEVICE_ADDR_7bit, Compressor1, &comp1);
+        CompressorRMS(DEVICE_ADDR_7bit, Compressor1Addr, &comp1);
       }
       break;
     case 1: // PARAM2
@@ -244,19 +244,19 @@ void loop()
         {
           case 1:
             comp1.ratio = 1.0;
-            CompressorRMS(DEVICE_ADDR_7bit, Compressor1, &comp1);
+            CompressorRMS(DEVICE_ADDR_7bit, Compressor1Addr, &comp1);
             break;
           case 2:
             comp1.ratio = 2.0;
-            CompressorRMS(DEVICE_ADDR_7bit, Compressor1, &comp1);
+            CompressorRMS(DEVICE_ADDR_7bit, Compressor1Addr, &comp1);
             break;
           case 3:
             comp1.ratio = 6.0;
-            CompressorRMS(DEVICE_ADDR_7bit, Compressor1, &comp1);
+            CompressorRMS(DEVICE_ADDR_7bit, Compressor1Addr, &comp1);
             break;
           case 4:
             comp1.ratio = 8.0;
-            CompressorRMS(DEVICE_ADDR_7bit, Compressor1, &comp1);
+            CompressorRMS(DEVICE_ADDR_7bit, Compressor1Addr, &comp1);
             break;
         }
       }
@@ -272,7 +272,7 @@ void loop()
       if(param3_value != comp1.attack)
       {
         comp1.attack = param3_value;
-        CompressorRMS(DEVICE_ADDR_7bit, Compressor1, &comp1);
+        CompressorRMS(DEVICE_ADDR_7bit, Compressor1Addr, &comp1);
       }
       break;
     case 3: // PARAM4
@@ -286,7 +286,7 @@ void loop()
       if(param4_value != comp1.hold)
       {
         comp1.hold = param4_value;
-        CompressorRMS(DEVICE_ADDR_7bit, Compressor1, &comp1);
+        CompressorRMS(DEVICE_ADDR_7bit, Compressor1Addr, &comp1);
       }
       break;
     case 4: // PARAM5
@@ -300,7 +300,7 @@ void loop()
       if(param5_value != comp1.decay)
       {
         comp1.decay = param5_value;
-        CompressorRMS(DEVICE_ADDR_7bit, Compressor1, &comp1);
+        CompressorRMS(DEVICE_ADDR_7bit, Compressor1Addr, &comp1);
       }
       break;
     case 5: // PARAM 6
@@ -314,7 +314,7 @@ void loop()
       if(param6_value != comp1.postgain)
       {
         comp1.postgain = param6_value;
-        CompressorRMS(DEVICE_ADDR_7bit, Compressor1, &comp1);
+        CompressorRMS(DEVICE_ADDR_7bit, Compressor1Addr, &comp1);
       }
       break;
     case 6: // PARAM 7
@@ -328,7 +328,7 @@ void loop()
       if(param7_value != volume)
       {
         volume = param7_value;
-        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20.0));
+        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, volume/20.0));
       }
       break;  
     } // End switch func_counter

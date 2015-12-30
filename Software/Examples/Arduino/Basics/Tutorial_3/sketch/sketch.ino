@@ -165,16 +165,16 @@ void loop()
         Serial.print(F(" Master Vol. "));
         Serial.print(volume, 1);
         Serial.println(F("dB"));
-        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20));
+        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, volume/20));
       }
       else
       {
-        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20)); // To re-enable volume after mute switch off
+        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, volume/20)); // To re-enable volume after mute switch off
       }			
     }
     else if(mute == ON)
     {
-      MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, 0.00);
+      MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolumeAddr, 0.00);
       Serial.println(F(" mute on"));
     }
     if(submenu==ON)
@@ -223,7 +223,7 @@ void loop()
         equalizer2.boost = 0.00;
         equalizer3.boost = 0.00;
         equalizer4.boost = 0.00;
-        tmpaddress = MidEQ1;
+        tmpaddress = MidEQ1Addr;
         EQ2ndOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer1);
         tmpaddress+=5; 
         EQ2ndOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer2);
@@ -238,7 +238,7 @@ void loop()
         equalizer2.boost = 9.20;
         equalizer3.boost = -7.60;
         equalizer4.boost = 1.20;
-        tmpaddress = MidEQ1;
+        tmpaddress = MidEQ1Addr;
         EQ2ndOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer1);
         tmpaddress+=5; 
         EQ2ndOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer2);
@@ -253,7 +253,7 @@ void loop()
         equalizer2.boost = 0.00;
         equalizer3.boost = 0.00;
         equalizer4.boost = 0.00;
-        tmpaddress = MidEQ1;
+        tmpaddress = MidEQ1Addr;
         EQ2ndOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer1);
         tmpaddress+=5; 
         EQ2ndOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer2);
@@ -268,7 +268,7 @@ void loop()
         equalizer2.boost = 0.00;
         equalizer3.boost = 0.00;
         equalizer4.boost = 0.00;
-        tmpaddress = MidEQ1;
+        tmpaddress = MidEQ1Addr;
         EQ2ndOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer1);
         tmpaddress+=5; 
         EQ2ndOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer2);

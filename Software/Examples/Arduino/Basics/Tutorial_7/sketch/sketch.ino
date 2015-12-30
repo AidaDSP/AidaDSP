@@ -136,10 +136,10 @@ void loop()
     Serial.println(F("press button for 1 sec to enter submenu."));
     Serial.println("");
 
-    readBack(DEVICE_ADDR_7bit, ReadBackAlg1, 0x0312, &readback1); // running average
-    readBack(DEVICE_ADDR_7bit, ReadBackAlg2, 0x031E, &readback2); // rms
-    readBack(DEVICE_ADDR_7bit, ReadBackAlg3, 0x032A, &readback3); // peak
-    readBack(DEVICE_ADDR_7bit, ReadBackAlg4, 0x0336, &readback4); // raw abs
+    readBack(DEVICE_ADDR_7bit, ReadBackAlg1Addr, 0x0312, &readback1); // running average
+    readBack(DEVICE_ADDR_7bit, ReadBackAlg2Addr, 0x031E, &readback2); // rms
+    readBack(DEVICE_ADDR_7bit, ReadBackAlg3Addr, 0x032A, &readback3); // peak
+    readBack(DEVICE_ADDR_7bit, ReadBackAlg4Addr, 0x0336, &readback4); // raw abs
     
     Serial.print(F(" Running Avg. : ")); // Print linear values (max +/-1.00) for readback values
     Serial.println(readback1, 1);
@@ -167,16 +167,16 @@ void loop()
         Serial.print(F(" Master Vol. : "));
         Serial.print(volume, 1);
         Serial.println(F("dB"));
-        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20)); // Call Aida DSP API with linear value from dB
+        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, volume/20)); // Call Aida DSP API with linear value from dB
       }
       else
       {
-        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20)); // To re-enable volume after mute switch off
+        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, volume/20)); // To re-enable volume after mute switch off
       }			
     }
     else if(mute == ON)
     {
-      MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, 0.00);
+      MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolumeAddr, 0.00);
       Serial.println(" mute on");
     }
     if(submenu==ON)
@@ -193,27 +193,27 @@ void loop()
       {
       case 1:
         Serial.println(F(" Sawtooth..."));
-        mux(DEVICE_ADDR_7bit, Selector, 1, 4);
-        mux(DEVICE_ADDR_7bit, Mux, 1, 2);
+        mux(DEVICE_ADDR_7bit, SelectorAddr, 1, 4);
+        mux(DEVICE_ADDR_7bit, MuxAddr, 1, 2);
         break;
       case 2:
         Serial.println(F(" Sine..."));
-        mux(DEVICE_ADDR_7bit, Selector, 2, 4);
-        mux(DEVICE_ADDR_7bit, Mux, 1, 2);
+        mux(DEVICE_ADDR_7bit, SelectorAddr, 2, 4);
+        mux(DEVICE_ADDR_7bit, MuxAddr, 1, 2);
         break;
       case 3:
         Serial.println(F(" Square..."));
-        mux(DEVICE_ADDR_7bit, Selector, 3, 4);
-        mux(DEVICE_ADDR_7bit, Mux, 1, 2);
+        mux(DEVICE_ADDR_7bit, SelectorAddr, 3, 4);
+        mux(DEVICE_ADDR_7bit, MuxAddr, 1, 2);
         break;
       case 4:
         Serial.println(F(" Triangle..."));
-        mux(DEVICE_ADDR_7bit, Selector, 4, 4);
-        mux(DEVICE_ADDR_7bit, Mux, 1, 2);
+        mux(DEVICE_ADDR_7bit, SelectorAddr, 4, 4);
+        mux(DEVICE_ADDR_7bit, MuxAddr, 1, 2);
         break;
       case 5:
         Serial.println(F(" Audio In..."));
-        mux(DEVICE_ADDR_7bit, Mux, 2, 2);
+        mux(DEVICE_ADDR_7bit, MuxAddr, 2, 2);
         break;
       }
       Serial.println("");

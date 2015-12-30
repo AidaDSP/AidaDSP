@@ -150,16 +150,16 @@ void loop()
         Serial.print(F(" Master Vol. : "));
         Serial.print(volume, 1);
         Serial.println(F("dB"));
-        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20)); // Call Aida DSP API with linear value from dB
+        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, volume/20)); // Call Aida DSP API with linear value from dB
       }
       else
       {
-        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, pow(10, volume/20)); // To re-enable volume after mute switch off
+        MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, volume/20)); // To re-enable volume after mute switch off
       }			
     }
     else if(mute == ON)
     {
-      MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolume, 0.00);
+      MasterVolumeStereo(DEVICE_ADDR_7bit, MasterVolumeAddr, 0.00);
       Serial.println(" mute on");
     }
     if(submenu==ON)
@@ -199,7 +199,7 @@ void loop()
         equalizer4.onoff = true;
 
         // Write them to DSP
-        tmpaddress = Gen1stOrder1;
+        tmpaddress = Gen1stOrder1Addr;
         EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer1);
         tmpaddress+=3;
         EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer2);
@@ -216,7 +216,7 @@ void loop()
         equalizer4.onoff = false;
 
         // Write them to DSP
-        tmpaddress = Gen1stOrder1;
+        tmpaddress = Gen1stOrder1Addr;
         EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer1);
         tmpaddress+=3;
         EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer2);
@@ -233,7 +233,7 @@ void loop()
         equalizer4.onoff = false;
 
         // Write them to DSP
-        tmpaddress = Gen1stOrder1;
+        tmpaddress = Gen1stOrder1Addr;
         EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer1);
         tmpaddress+=3;
         EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer2);
@@ -250,7 +250,7 @@ void loop()
         equalizer4.onoff = false;
 
         // Write them to DSP
-        tmpaddress = Gen1stOrder1;
+        tmpaddress = Gen1stOrder1Addr;
         EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer1);
         tmpaddress+=3;
         EQ1stOrd(DEVICE_ADDR_7bit, tmpaddress, &equalizer2);
