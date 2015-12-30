@@ -25,3 +25,27 @@ SDA1 | SDA(0) | I2C SDA
 4 | PF_4 (PUSH1) | ENC_PUSH
 11 | PB_7 | RESET
 12 | PB_6 | SBOOT
+
+__Board Specifications__
+
+Parameter | Value
+-------------------- | -----
+Sample Rate | 48-96-192kHz selectable 
+Bit Depth | 24-bit 
+Analog Audio Connections | 1 stereo mini jack in 2 stereo mini jack out
+Input Level | 2.0Vrms (5.66Vpp, 8.23dBu)
+Input Impedance | 20kohm
+Output Level | 0.9Vrms (2.5Vpp, 1.30dBu) 
+Output Impedance | High (>20kohm on amplifier input)
+Dynamic Range | 100dB ADC, 100dB DAC A-weighted
+Digital Connections | I2S, TDM
+GPIOs | See pinout expansion connector 
+Dimensions | 105mm x 54mm x 35mm
+Power Supply | 5.0Vdc, powered by Arduino/TivaC
+
+
+
+
+
+
+
