@@ -2,7 +2,7 @@
   AidaDSP.cpp - Aida DSP library
  Copyright (c) 2015 Massimo Pennazio.  All right reserved.
  
- Version: 0.1 ADAU170x
+ Version: 0.11 ADAU144x
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -116,41 +116,38 @@ float processencoder(float minval, float maxval, int32_t pulses)
   {
     if(pulses >= 0)
     {
-      if(pulses == 0)
-        return minval;
-      else // pulses > 0
-      {
-        val = (pulses*((maxval-minval)/max_number_of_pulses))+minval;
-        if(val > maxval)
-          return maxval;
-        else
-          return val;
-      }
+      val = (pulses*((maxval-minval)/max_number_of_pulses))+minval;
+      if(val > maxval)
+        return maxval;
+      else
+        return val;
     }
+    else
+      return minval;
   }
   else if(minval < 0 && maxval > 0)
   {
     if(pulses >= 0)
+    {
+      if(pulses == 0) 
+        return 0.00;
+      else
       {
-        if(pulses == 0) 
-          return 0.00;
+        val = pulses*(maxval/max_number_of_pulses);
+        if(val > maxval)
+          return maxval;
         else
-        {
-          val = pulses*(maxval/max_number_of_pulses);
-          if(val > maxval)
-            return maxval;
-          else
-            return val; 
-        }
+          return val; 
       }
-      else // pulses < 0
-      {
-        val = abs(pulses)*(minval/max_number_of_pulses);
-        if(val < minval)
-          return minval;
-        else
-          return val;
-      }    
+    }
+    else // pulses < 0
+    {
+      val = abs(pulses)*(minval/max_number_of_pulses);
+      if(val < minval)
+        return minval;
+      else
+        return val;
+    }    
   }
 }
 
@@ -417,11 +414,11 @@ void EQ1stOrd(uint8_t dspAddress, uint16_t address, equalizer_t* equalizer){
       coefficients[1] = b1;
       coefficients[2] = a1;			
     }
-    else	// !!!Warning!!! In Sigma Studio parameters don't change when phase is changed
+    else	
     {
-      coefficients[0] = b0;
-      coefficients[1] = b1;
-      coefficients[2] = a1;
+      coefficients[0] = -1*b0;
+      coefficients[1] = -1*b1;
+      coefficients[2] = a1; // This coefficient does not change sign
     }
   }
   else
@@ -565,7 +562,7 @@ void EQ2ndOrd(uint8_t dspAddress, uint16_t address, equalizer_t* equalizer){
   } 
   
   // For Sigma DSP implementation we need to normalize all the coefficients respect to a0
-  // and inverting a1 and a2 inverting by sign 
+  // and inverting by sign a1 and a2  
   if(a0 != 0.00 && equalizer->boost != 0 && equalizer->onoff == true)
   {
     if(equalizer->phase == true)
@@ -581,7 +578,7 @@ void EQ2ndOrd(uint8_t dspAddress, uint16_t address, equalizer_t* equalizer){
       coefficients[0]=-1*b0/a0;
       coefficients[1]=-1*b1/a0;
       coefficients[2]=-1*b2/a0;
-      coefficients[3]=a1/a0;
+      coefficients[3]=-1*a1/a0; // This coefficient does not change sign!
       coefficients[4]=a2/a0;
     }
   }
@@ -983,6 +980,30 @@ void mux(uint8_t dspAddress, uint16_t address, uint8_t select, uint8_t nchannels
 }
 
 /**
+ * This function controls an audio multiplexer cell (switch audio signals)
+ * noiseless (clickless) version
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param select - the index (the signal) you want to switch to
+ */
+void muxnoiseless(uint8_t dspAddress, uint16_t address, uint8_t select)
+{
+  uint8_t buf[4];
+  uint32_t value;
+  
+  if(select==0)
+    value = 0;
+  else
+    value = (uint32_t)select-1; 
+  buf[0] = (value>>24)&0xFF; // MSB first
+  buf[1] = (value>>16)&0xFF;
+  buf[2] = (value>>8)&0xFF;
+  buf[3] = value&0xFF; 
+  
+  AIDA_WRITE_REGISTER(dspAddress, address, 4, buf);
+}
+
+/**
  * This function controls an hard saturation cell
  * with separate negative and positive threshold
  * @param dspAddress - the physical I2C address (7-bit format)
@@ -1005,7 +1026,7 @@ void hard_clip(uint8_t dspAddress, uint16_t address, float th_high, float th_low
  * This function controls an soft saturation cell
  * @param dspAddress - the physical I2C address (7-bit format)
  * @param address - the param address of the cell
- * @param alpha - the main coefficient for soft clipping curve, the
+ * @param alpha - range 0.1-10.0 the main coefficient for soft clipping curve, the
  * higher the coefficient, the smoothest the curve
  */
 void soft_clip(uint8_t dspAddress, uint16_t address, float alpha)
