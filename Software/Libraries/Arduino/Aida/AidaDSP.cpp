@@ -2,7 +2,7 @@
   AidaDSP.cpp - Aida DSP library
  Copyright (c) 2015 Massimo Pennazio.  All right reserved.
  
- Version: 0.11 ADAU170x
+ Version: 0.12 ADAU170x
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -407,7 +407,8 @@ void EQ1stOrd(uint8_t dspAddress, uint16_t address, equalizer_t* equalizer){
     b1 = -a1 * gainLinear;
   }
 
-  if(equalizer->onoff == true){
+  if(equalizer->onoff == true)
+  {
     if(equalizer->phase == true)
     {
       coefficients[0] = b0;
@@ -563,7 +564,7 @@ void EQ2ndOrd(uint8_t dspAddress, uint16_t address, equalizer_t* equalizer){
   
   // For Sigma DSP implementation we need to normalize all the coefficients respect to a0
   // and inverting by sign a1 and a2  
-  if(a0 != 0.00 && equalizer->boost != 0 && equalizer->onoff == true)
+  if(a0 != 0.00 && equalizer->onoff == true)
   {
     if(equalizer->phase == true)
     {
@@ -579,7 +580,7 @@ void EQ2ndOrd(uint8_t dspAddress, uint16_t address, equalizer_t* equalizer){
       coefficients[1]=-1*b1/a0;
       coefficients[2]=-1*b2/a0;
       coefficients[3]=-1*a1/a0; // This coefficient does not change sign!
-      coefficients[4]=a2/a0;
+      coefficients[4]=-1*a2/a0; // This coefficient does not change sign!
     }
   }
   else    // off or disable position
