@@ -2,7 +2,7 @@
   AidaDSP.cpp - Aida DSP library
  Copyright (c) 2015 Massimo Pennazio.  All right reserved.
  
- Version: 0.12 ADAU144x
+ Version: 0.13 ADAU144x
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -1142,6 +1142,48 @@ void triangle_source(uint8_t dspAddress, uint16_t address, float frequency)
     AIDA_SAFELOAD_WRITE_REGISTER(dspAddress, address++, false, buffer);		 // mask
     AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, value);	 // increment
     AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, 1.0);	 	 // ison
+  #endif
+}
+
+/**
+ * This function controls a delay cell
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param delay - ranges: 
+ *    0.0-42.6ms (ADAU170x) @ 48kHz
+ *    0.0-21.3ms (ADAU170x) @ 96kHz
+ *    0.0-10.6ms (ADAU170x) @ 192kHz
+ *    0.0-170.6ms (ADAU140x) @ 48kHz
+ *    0.0-85.3ms (ADAU140x) @ 96kHz
+ *    0.0-42.6ms (ADAU140x) @ 192kHz
+ * WARNING!!! Delays calculated are theoretical assuming you have 100% data memory available
+ * in your Sigma Studio design. Data memory is shared among other blocks in Sigma Studio so
+ * in practice, this much data memory is not available to the user
+ * because every block in a design uses a few data memory locations
+ * for its processing. The SigmaStudio compiler
+ * manages the data RAM and indicates if the number of addresses
+ * needed in the design exceeds the maximum available.
+ */
+void delayCell(uint8_t dspAddress, uint16_t address, float delay)
+{
+  uint32_t ticks = 0;
+  uint8_t data[4];
+  
+  ticks = (uint32_t)(delay/(1/FS));
+  
+  data[0] = (ticks>>24)&0xFF; // MSB First
+  data[1] = (ticks>>16)&0xFF;
+  data[2] = (ticks>>8)&0xFF;
+  data[3] = ticks&0xFF; 
+  
+  #ifdef ADAU170x
+    if(ticks>2048)
+      ticks=2048;
+    AIDA_SAFELOAD_WRITE_REGISTER(dspAddress, address, true, data);    
+  #else // ADAU144x
+    if(ticks>8192)
+      ticks=8192;
+    AIDA_SW_SAFELOAD_WRITE_REGISTER(dspAddress, address, 4, data);
   #endif
 }
 

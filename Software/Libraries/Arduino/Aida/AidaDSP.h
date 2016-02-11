@@ -2,7 +2,7 @@
   AidaDSP.h - Aida DSP library
  Copyright (c) 2015 Massimo Pennazio.  All right reserved.
  
- Version: 0.12 ADAU170x
+ Version: 0.13 ADAU170x
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -177,6 +177,7 @@ void sine_source(uint8_t dspAddress, uint16_t address, float frequency);
 void sawtooth_source(uint8_t dspAddress, uint16_t address, float frequency);
 void square_source(uint8_t dspAddress, uint16_t address, float frequency);
 void triangle_source(uint8_t dspAddress, uint16_t address, float frequency);
+void delayCell(uint8_t dspAddress, uint16_t address, float delay);
 
 /************************************************
  *    AIDA LOW LEVEL FUNCTIONS (do not edit)    *
