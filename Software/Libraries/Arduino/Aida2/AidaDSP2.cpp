@@ -1183,7 +1183,7 @@ void delayCell(uint8_t dspAddress, uint16_t address, float delay)
   #else // ADAU144x
     if(ticks>8192)
       ticks=8192;
-    AIDA_SW_SAFELOAD_WRITE_REGISTER(dspAddress, address, 4, data);
+    AIDA_SW_SAFELOAD_WRITE_REGISTER(dspAddress, address, true, data);
   #endif
 }
 
