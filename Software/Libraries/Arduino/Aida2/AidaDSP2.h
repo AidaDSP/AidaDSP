@@ -2,7 +2,7 @@
   AidaDSP.h - Aida DSP library
  Copyright (c) 2015 Massimo Pennazio.  All right reserved.
  
- Version: 0.13 ADAU144x
+ Version: 0.14 ADAU144x
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -124,7 +124,7 @@ typedef struct equalizer_t{
   float f0;         // Range 20-20000 [Hz]
   float boost;      // Range +/-15 [dB]
   unsigned char type;     // See defines section...
-  unsigned char phase;    // True -> in phase (0°) False -> -180°
+  unsigned char phase;    // 0 or False -> in phase (0°) 1 or True -> 180°
   unsigned char onoff;    // False -> off True -> on
 }equalizer;
 
@@ -133,7 +133,7 @@ typedef struct toneCtrl_t{
   float Boost_Treble_dB;
   float Freq_Bass;
   float Freq_Treble;
-  unsigned char phase;
+  unsigned char phase;    // 0 or False -> in phase (0°) 1 or True -> 180°
   unsigned char onoff;    // False -> off True -> on
 }toneCtrl;
 

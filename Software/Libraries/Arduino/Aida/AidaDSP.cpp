@@ -2,7 +2,7 @@
   AidaDSP.cpp - Aida DSP library
  Copyright (c) 2015 Massimo Pennazio.  All right reserved.
  
- Version: 0.13 ADAU170x
+ Version: 0.14 ADAU170x
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -343,9 +343,9 @@ void setPulses(int32_t value)
 void gainCell(uint8_t dspAddress, uint16_t address, float value)
 {
 	#ifdef ADAU144x
-    AIDA_SW_SAFELOAD_WRITE_VALUE(dspAddress, address, false, value);
+    AIDA_SW_SAFELOAD_WRITE_VALUE(dspAddress, address, true, value);
   #else
-    AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, false, value);
+    AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, value);
   #endif
 }
 
@@ -358,9 +358,9 @@ void gainCell(uint8_t dspAddress, uint16_t address, float value)
 void MasterVolumeMono(uint8_t dspAddress, uint16_t address, float value)
 {
   #ifdef ADAU144x
-    AIDA_SW_SAFELOAD_WRITE_VALUE(dspAddress, address, false, value);
+    AIDA_SW_SAFELOAD_WRITE_VALUE(dspAddress, address, true, value);
   #else
-    AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, false, value);
+    AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, value);
   #endif
 }
 
@@ -409,13 +409,13 @@ void EQ1stOrd(uint8_t dspAddress, uint16_t address, equalizer_t* equalizer){
 
   if(equalizer->onoff == true)
   {
-    if(equalizer->phase == true)
+    if(equalizer->phase == false) // 0°
     {
       coefficients[0] = b0;
       coefficients[1] = b1;
       coefficients[2] = a1;			
     }
-    else	
+    else // 180°
     {
       coefficients[0] = -1*b0;
       coefficients[1] = -1*b1;
@@ -433,11 +433,11 @@ void EQ1stOrd(uint8_t dspAddress, uint16_t address, equalizer_t* equalizer){
   #ifdef ADAU144x
     AIDA_SW_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[0]);
     AIDA_SW_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[1]);
-    AIDA_SW_SAFELOAD_WRITE_VALUE(dspAddress, address, false, coefficients[2]);
+    AIDA_SW_SAFELOAD_WRITE_VALUE(dspAddress, address, true, coefficients[2]);
   #else
     AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[0]);
     AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[1]);
-    AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, false, coefficients[2]);
+    AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, coefficients[2]);
   #endif
 
   //Serial.write('\n'); //!!!Debug!!!
@@ -566,7 +566,7 @@ void EQ2ndOrd(uint8_t dspAddress, uint16_t address, equalizer_t* equalizer){
   // and inverting by sign a1 and a2  
   if(a0 != 0.00 && equalizer->onoff == true)
   {
-    if(equalizer->phase == true)
+    if(equalizer->phase == false) // 0°
     {
       coefficients[0]=b0/a0;
       coefficients[1]=b1/a0;
@@ -574,7 +574,7 @@ void EQ2ndOrd(uint8_t dspAddress, uint16_t address, equalizer_t* equalizer){
       coefficients[3]=-1*a1/a0;
       coefficients[4]=-1*a2/a0;
     }
-    else
+    else // 180°
     {
       coefficients[0]=-1*b0/a0;
       coefficients[1]=-1*b1/a0;
@@ -598,13 +598,13 @@ void EQ2ndOrd(uint8_t dspAddress, uint16_t address, equalizer_t* equalizer){
     AIDA_SW_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[1]);
     AIDA_SW_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[2]);
     AIDA_SW_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[3]);
-    AIDA_SW_SAFELOAD_WRITE_VALUE(dspAddress, address, false, coefficients[4]);
+    AIDA_SW_SAFELOAD_WRITE_VALUE(dspAddress, address, true, coefficients[4]);
   #else
     AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[0]);
     AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[1]);
     AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[2]);
     AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[3]);
-    AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, false, coefficients[4]);
+    AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, coefficients[4]);
   #endif
   
   /*Serial.write('\n'); //!!!Debug!!!
@@ -659,7 +659,7 @@ void ToneControl(uint8_t dspAddress, uint16_t address, toneCtrl_t *toneCtrl){
   // and inverting a1 and a2 by sign 
   if(a0 != 0.00 && toneCtrl->onoff == true)
   {
-    if(toneCtrl->phase == true)
+    if(toneCtrl->phase == false) // 0°
     {
       coefficients[0]=b0/a0;
       coefficients[1]=b1/a0;
@@ -667,7 +667,7 @@ void ToneControl(uint8_t dspAddress, uint16_t address, toneCtrl_t *toneCtrl){
       coefficients[3]=-1*a1/a0;
       coefficients[4]=-1*a2/a0;
     }
-    else
+    else // 180°
     {
       coefficients[0]=-1*b0/a0;
       coefficients[1]=-1*b1/a0;
@@ -691,13 +691,13 @@ void ToneControl(uint8_t dspAddress, uint16_t address, toneCtrl_t *toneCtrl){
     AIDA_SW_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[1]);
     AIDA_SW_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[2]);
     AIDA_SW_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[3]);
-    AIDA_SW_SAFELOAD_WRITE_VALUE(dspAddress, address, false, coefficients[4]);
+    AIDA_SW_SAFELOAD_WRITE_VALUE(dspAddress, address, true, coefficients[4]);
   #else
     AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[0]);
     AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[1]);
     AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[2]);
     AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, coefficients[3]);
-    AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, false, coefficients[4]);
+    AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address, true, coefficients[4]);
   #endif
 }
 
@@ -718,10 +718,10 @@ void StateVariable(uint8_t dspAddress, uint16_t address, float frequency, float 
   // Write parameters to Sigma DSP
   #ifdef ADAU144x
     AIDA_SW_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, param1);
-    AIDA_SW_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, param2);
+    AIDA_SW_SAFELOAD_WRITE_VALUE(dspAddress, address++, true, param2);
   #else
     AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, param1);
-    AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, false, param2);
+    AIDA_SAFELOAD_WRITE_VALUE(dspAddress, address++, true, param2);
   #endif
 }
 
@@ -985,7 +985,7 @@ void mux(uint8_t dspAddress, uint16_t address, uint8_t select, uint8_t nchannels
  * noiseless (clickless) version
  * @param dspAddress - the physical I2C address (7-bit format)
  * @param address - the param address of the cell
- * @param select - the index (the signal) you want to switch to
+ * @param select - the index (the signal) you want to switch to range 1-N
  */
 void muxnoiseless(uint8_t dspAddress, uint16_t address, uint8_t select)
 {
@@ -1287,16 +1287,13 @@ void AIDA_SAFELOAD_WRITE_REGISTER(uint8_t dspAddress, uint16_t address, boolean 
 	buf[4] = data[3];
 	AIDA_WRITE_REGISTER(dspAddress, 0x0810+safeload_count, 5, buf);  // load safeload data 0
 	
-	if(finish == true || safeload_count == 4)  // Max 5 safeload memory registers
+  safeload_count++;
+	if(finish == true || safeload_count == 5)  // Max 5 safeload memory registers
 	{
 		buf[0] = 0x00;
 		buf[1] = 0x3C;
 		AIDA_WRITE_REGISTER(dspAddress, 0x081C, 2, buf);  //  IST (initiate safeload transfer bit)
 		safeload_count = 0;
-	}
-	else
-	{ 
-		safeload_count++;
 	}
 }
 
@@ -1314,16 +1311,13 @@ void AIDA_SAFELOAD_WRITE_VALUE(uint8_t dspAddress, uint16_t address, boolean fin
   float_to_fixed(value, &buf[1]);
   AIDA_WRITE_REGISTER(dspAddress, 0x0810+safeload_count, 5, buf);  // load safeload data 0
 
-  if(finish == true || safeload_count == 4)  // Max 5 safeload memory registers
+  safeload_count++;
+  if(finish == true || safeload_count == 5)  // Max 5 safeload memory registers
   {
     buf[0] = 0x00;
     buf[1] = 0x3C;
     AIDA_WRITE_REGISTER(dspAddress, 0x081C, 2, buf);  //  IST (initiate safeload transfer bit)
     safeload_count = 0;
-  }
-  else
-  { 
-    safeload_count++;
   } 
 }
 
@@ -1346,7 +1340,8 @@ void AIDA_SW_SAFELOAD_WRITE_REGISTER(uint8_t dspAddress, uint16_t address, boole
 		AIDA_WRITE_REGISTER(dspAddress, 0x0006, 4, buf);  //  Write destination address-1 in 0x0006
 	}
 	
-	if(finish == true || sw_safeload_count == 4)  // Max 5 safeload memory registers
+  sw_safeload_count++;
+	if(finish == true || sw_safeload_count == 5)  // Max 5 safeload memory registers
 	{
 		value32b = sw_safeload_count+1;
 		buf[0] = (value32b>>24)&0xFF; // MSB first
@@ -1355,10 +1350,6 @@ void AIDA_SW_SAFELOAD_WRITE_REGISTER(uint8_t dspAddress, uint16_t address, boole
 		buf[3] = (value32b)&0xFF;
 		AIDA_WRITE_REGISTER(dspAddress, 0x0007, 4, buf);  //  Write nvalues in 0x0007, start Safeload Write
 		sw_safeload_count = 0; // Reset counter		
-	}
-	else
-	{
-		sw_safeload_count++;
 	}
 }
 
@@ -1382,7 +1373,8 @@ void AIDA_SW_SAFELOAD_WRITE_VALUE(uint8_t dspAddress, uint16_t address, boolean 
 		AIDA_WRITE_REGISTER(dspAddress, 0x0006, 4, buf);  //  Write destination address-1 in 0x0006
 	}
 	
-	if(finish == true || sw_safeload_count == 4)  // Max 5 safeload memory registers
+  sw_safeload_count++;
+	if(finish == true || sw_safeload_count == 5)  // Max 5 safeload memory registers
 	{
 		value32b = sw_safeload_count+1;
 		buf[0] = (value32b>>24)&0xFF; // MSB first
@@ -1391,10 +1383,6 @@ void AIDA_SW_SAFELOAD_WRITE_VALUE(uint8_t dspAddress, uint16_t address, boolean 
 		buf[3] = (value32b)&0xFF;
 		AIDA_WRITE_REGISTER(dspAddress, 0x0007, 4, buf);  //  Write nvalues in 0x0007, start Safeload Write
 		sw_safeload_count = 0; // Reset counter		
-	}
-	else
-	{
-		sw_safeload_count++;
 	}
 }
 
