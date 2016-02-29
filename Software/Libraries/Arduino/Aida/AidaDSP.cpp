@@ -2,7 +2,7 @@
   AidaDSP.cpp - Aida DSP library
  Copyright (c) 2015 Massimo Pennazio.  All right reserved.
  
- Version: 0.14 ADAU170x
+ Version: 0.15 ADAU170x
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -181,23 +181,20 @@ uint16_t selectorwithencoder(int32_t pulses, uint8_t bits)
  */
 float processpot(float minval, float maxval, uint16_t potval)
 {
-  if(minval < 0)
+  if(minval < 0 && maxval <= 0)
   {
-    if(maxval<0)
-    {
-      return (((potval*((abs(minval)-abs(maxval))/FULLRANGEVAL)))+minval);
-    }
-    else
-    {
-      if(potval >= MIDDLEVAL)
+    return (((potval*((abs(minval)-abs(maxval))/FULLRANGEVAL)))+minval);    
+  }
+  else if(minval >= 0 && maxval > 0)
+  {
+    return ((((potval*(maxval-minval)/FULLRANGEVAL)))+minval);
+  }
+  else if(minval < 0 && maxval > 0)
+  {
+    if(potval >= MIDDLEVAL)
         return ((potval-MIDDLEVAL)*(maxval/MIDDLEVAL));
       else
         return ((MIDDLEVAL-potval)*(minval/MIDDLEVAL));
-    }
-  } 
-  else
-  {
-    return (((potval*((maxval-minval)/FULLRANGEVAL)))+minval);
   }
 }
 
