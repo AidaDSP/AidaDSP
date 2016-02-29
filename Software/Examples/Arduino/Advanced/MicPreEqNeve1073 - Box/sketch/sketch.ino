@@ -38,10 +38,8 @@
 
 // DEFINES USER INTERFACE
 //#define PRE_GAIN_MAX 80.00
-//#define PRE_GAIN_MAX 24.00
-//#define PRE_GAIN_MIN 0.0
-#define PRE_GAIN_MAX 0.00
-#define PRE_GAIN_MIN -80.0
+#define PRE_GAIN_MAX 24.00
+#define PRE_GAIN_MIN 0.0
 #define PRE_LPF_MAX 300.00
 #define PRE_LPF_MIN 50.00
 // Main Eq Frequencies
@@ -345,12 +343,12 @@ void loop()
   pot3 = out3;
   if(!isinrange(pot3, oldpot3, POT_THR))
   {
-    //func_counter=3;
-    func_counter=4;
-    //param4_value = processpot(-16.0, 16.0, pot3); // Low Boost
-    param5_value = processpot(MAIN_EQ_MID_MIN, MAIN_EQ_MID_MAX, pot3); // Mid Freq
-    //mid_eq.boost = param4_value;
-    mid_eq.f0 = param5_value; 
+    func_counter=3;
+    //func_counter=4;
+    param4_value = processpot(-16.0, 16.0, pot3); // Low Boost
+    //param5_value = processpot(MAIN_EQ_MID_MIN, MAIN_EQ_MID_MAX, pot3); // Mid Freq
+    mid_eq.boost = param4_value;
+    //mid_eq.f0 = param5_value; 
     EQ2ndOrd(DEVICE_ADDR_7bit, MidEqAddr, &mid_eq);
     oldpot3 = pot3;
   }
@@ -504,7 +502,7 @@ void loop()
       delayMicroseconds(100);
       break;
     case 3: // Middle Boost 
-      if(restore)
+      /*if(restore)
       {
         restore = 0;
         setPulses(param4_pulses);
@@ -513,10 +511,10 @@ void loop()
       param4_value = processencoder(-18.0, 18.0, param4_pulses); // Mid Boost
       mid_eq.boost = param4_value;
       EQ2ndOrd(DEVICE_ADDR_7bit, MidEqAddr, &mid_eq);
-      delayMicroseconds(100);
+      delayMicroseconds(100);*/
       break;
     case 4: // Middle Frequency
-      /*if(restore)
+      if(restore)
       {
         restore = 0;
         setPulses(param5_pulses);
@@ -525,7 +523,7 @@ void loop()
       param5_value = processencoder(MAIN_EQ_MID_MIN, MAIN_EQ_MID_MAX, param5_pulses); // Mid Freq
       mid_eq.f0 = param5_value;
       EQ2ndOrd(DEVICE_ADDR_7bit, MidEqAddr, &mid_eq);
-      delayMicroseconds(100);*/
+      delayMicroseconds(100);
       break;  
     case 5: // High Boost
       /*if(restore)
