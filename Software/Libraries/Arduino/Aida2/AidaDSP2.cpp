@@ -2,7 +2,7 @@
   AidaDSP.cpp - Aida DSP library
  Copyright (c) 2015 Massimo Pennazio.  All right reserved.
  
- Version: 0.15 ADAU144x
+ Version: 0.16 ADAU144x (Arduino)
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -34,8 +34,8 @@
 #else
 #define WIRE Wire1 // Arduino2
 #endif
-#define FULLRANGEVAL 1024
-#define MIDDLEVAL (1024.00/2)
+#define FULLRANGEVAL 1024.0f
+#define MIDDLEVAL (FULLRANGEVAL/2)
 
 #ifdef ENC_RES_X4
 #define N_ENC 24*4 // We manage the quadrature encoder with x4 resolution so 24*4 every turn.
@@ -951,10 +951,7 @@ void readBack(uint8_t dspAddress, uint16_t address, uint16_t capturecount, float
 
   word32 = (buf[0]<<24 | buf[1]<<16 | buf[2]<<8)&0xFFFFFF00; // MSB first, convert to 5.27 format
 
-  if(word32==0)     // Do not calculate log of 0! Unless you want to deal with huge negative numbers!
-    word32 = 1; // Absolute minimum, when word32 value is 0x01, value = 1.49011612e-8
-
-  *value = ((float)word32/(1 << 27)); // I'm converting to 5.27 to maintain sign
+  *value = ((float)word32/(1 << 27)); // I'm converting from 5.27 int32 to maintain sign
 }
 
 /**
@@ -1011,13 +1008,12 @@ void muxnoiseless(uint8_t dspAddress, uint16_t address, uint8_t select)
  */
 void hard_clip(uint8_t dspAddress, uint16_t address, float th_high, float th_low)
 {
-  uint8_t buffer[12];
+  uint8_t buffer[8];
   
   float_to_fixed(th_high, &buffer[0]);
   float_to_fixed(th_low, &buffer[4]);
-  float_to_fixed(th_low, &buffer[8]); // !!! Write two times BUG of stereo hard clipper section !!! 
   
-  AIDA_WRITE_REGISTER(dspAddress, address, 12, buffer);
+  AIDA_WRITE_REGISTER(dspAddress, address, 8, buffer);
 }
 
 /**

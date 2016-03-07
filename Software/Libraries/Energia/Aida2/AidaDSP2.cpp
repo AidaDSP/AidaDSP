@@ -2,7 +2,7 @@
   AidaDSP.cpp - Aida DSP library
  Copyright (c) 2015 Massimo Pennazio.  All right reserved.
  
- Version: 0.16 ADAU170x (Arduino)
+ Version: 0.16 ADAU144x (Energia)
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -19,9 +19,9 @@
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
  
-#include "AidaDSP.h"
+#include "AidaDSP2.h"
 
-#define ADAU170x
+#define ADAU144x
 
 #ifndef ADAU144x
   #ifndef ADAU170x
@@ -29,12 +29,7 @@
   #endif
 #endif
 
-#ifdef __AVR__ 
-#define WIRE Wire
-#else
-#define WIRE Wire1 // Arduino2
-#endif
-#define FULLRANGEVAL 1024.0f
+#define FULLRANGEVAL 4096.0f
 #define MIDDLEVAL (FULLRANGEVAL/2)
 
 #ifdef ENC_RES_X4
@@ -238,37 +233,21 @@ uint8_t isinrange(int16_t value, int16_t reference, int16_t threshold)
  */
 void InitAida(void)
 {
-  #ifdef __AVR__
-	  pinMode(ENC_PUSH, INPUT); // 3.3v pull-up provided on Aida DSP board
-	  pinMode(ENCA, INPUT);
-	  pinMode(ENCB, INPUT);
-	  #ifdef ENC_RES_X1
-      attachInterrupt(1, enc_manager, RISING);  // Arduino Mega: interrupts are on fixed pins only (ENCA, Pin 3)
-	  #else 
-      #ifdef ENC_RES_X2
-        attachInterrupt(0, enc_manager, RISING);  // Arduino Mega: interrupts are on fixed pins only (ENCB, Pin 2)
-        attachInterrupt(1, enc_manager, RISING);  // Arduino Mega: interrupts are on fixed pins only (ENCA, Pin 3)
-      #else
-        attachInterrupt(0, enc_manager, CHANGE);  // Arduino Mega: interrupts are on fixed pins only (ENCB, Pin 2)
-        attachInterrupt(1, enc_manager, CHANGE);  // Arduino Mega: interrupts are on fixed pins only (ENCA, Pin 3)
-      #endif
-	  #endif
+  pinMode(ENC_PUSH, INPUT_PULLUP);
+  pinMode(ENCA, INPUT_PULLUP);
+  pinMode(ENCB, INPUT_PULLUP);
+  #ifdef ENC_RES_X1
+    attachInterrupt(ENCA, enc_manager, RISING); // Interrupt is fired whenever ENC changes state
   #else
-    pinMode(ENC_PUSH, INPUT_PULLUP);
-    pinMode(ENCA, INPUT_PULLUP);
-    pinMode(ENCB, INPUT_PULLUP);
-    #ifdef ENC_RES_X1
+    #ifdef ENC_RES_X2
       attachInterrupt(ENCA, enc_manager, RISING); // Interrupt is fired whenever ENC changes state
+      attachInterrupt(ENCB, enc_manager, RISING); // Both channels, rising for x2 resolution 360°/24*2
     #else
-      #ifdef ENC_RES_X2
-        attachInterrupt(ENCA, enc_manager, RISING); // Interrupt is fired whenever ENC changes state
-        attachInterrupt(ENCB, enc_manager, RISING); // Both channels, rising for x2 resolution 360°/24*2
-      #else
-        attachInterrupt(ENCA, enc_manager, CHANGE); // Interrupt is fired whenever ENC changes state
-        attachInterrupt(ENCB, enc_manager, CHANGE); // Both channels, rising-falling for x4 resolution 360°/24*4
-      #endif
+      attachInterrupt(ENCA, enc_manager, CHANGE); // Interrupt is fired whenever ENC changes state
+      attachInterrupt(ENCB, enc_manager, CHANGE); // Both channels, rising-falling for x4 resolution 360°/24*4
     #endif
   #endif
+  
   
   pinMode(SBOOT, OUTPUT);
   pinMode(RESET, OUTPUT);
@@ -276,9 +255,9 @@ void InitAida(void)
   digitalWrite(SBOOT, LOW);  // Self-boot: DSP in uC control mode
   digitalWrite(RESET, LOW);  // Hold DSP in RESET state (halted) 
 
-  WIRE.begin(); // join i2c bus (address optional for master)
-  WIRE.setClock(400000UL); // use i2c peripheral module in fast-mode (400kHz i2c clk)
-  //WIRE.setClock(100000UL); // use i2c peripheral module in default-mode (100kHz i2c clk)
+  Wire.setModule(0, I2C_SPEED_FASTMODE); // use 3rd i2c peripheral module in fast-mode (400kHz i2c clk)
+
+  Wire.begin(); // join i2c bus (address optional for master)
   delay(10); 
 }
 
@@ -1229,28 +1208,28 @@ void AIDA_WRITE_REGISTER(uint8_t dspAddress, uint16_t address, uint8_t length, u
   byte MSByte = 0x00;
   byte res = 0x00;
 
-  WIRE.beginTransmission(dspAddress);  // Begin write
+  Wire.beginTransmission(dspAddress);  // Begin write
   LSByte = (byte)address & 0xFF;
   MSByte = address >> 8;
-  WIRE.write(MSByte);             // Sends High Address
-  WIRE.write(LSByte);             // Sends Low Address
+  Wire.write(MSByte);             // Sends High Address
+  Wire.write(LSByte);             // Sends Low Address
 
   for(i=0;i<length;i++)
   {
-    WIRE.write((byte)data[i]);             // sends bytes 
+    Wire.write((byte)data[i]);             // sends bytes 
   }
-  WIRE.endTransmission(true);     // Write out data to I2C and stop transmitting
+  Wire.endTransmission(true);     // Write out data to I2C and stop transmitting
 }
 
 void AIDA_WRITE_REGISTER_BLOCK(uint8_t dspAddress, uint16_t address, uint16_t length, const uint8_t *data)
 { 
   uint16_t res = 0;
 
-  WIRE.beginTransmission(dspAddress);  // Begin write
+  Wire.beginTransmission(dspAddress);  // Begin write
 
-  res = WIRE.writeBlock(data, length, address);
+  res = Wire.writeBlock((uint8_t *)data, length, address);
   
-  WIRE.endTransmission(true);     // Write out data to I2C and stop transmitting
+  Wire.endTransmission(true);     // Write out data to I2C and stop transmitting
 }
 
 void AIDA_WRITE_VALUE(uint8_t dspAddress, uint16_t address, float value)
@@ -1413,25 +1392,21 @@ void AIDA_READ_REGISTER(uint8_t dspAddress, uint16_t address, uint8_t length, ui
   byte LSByte = 0x00;
   byte MSByte = 0x00;
 
-  #ifdef __AVR__
-  WIRE.beginTransmission(dspAddress);  // Begin write
+  Wire.beginTransmission(dspAddress);  // Begin write
 
   // Send the internal address I want to read
   LSByte = (byte)address & 0xFF;
   MSByte = address >> 8;
-  WIRE.write(MSByte);             // Sends High Address
-  WIRE.write(LSByte);             // Sends Low Address
+  Wire.write(MSByte);             // Sends High Address
+  Wire.write(LSByte);             // Sends Low Address
 
-  WIRE.endTransmission(false);    // Write out data to I2C but don't send stop condition on I2C bus
+  Wire.endTransmission(false);    // Write out data to I2C but don't send stop condition on I2C bus
   
-  WIRE.requestFrom(dspAddress, length);    // request n bytes from slave device 
-  #else
-  WIRE.requestFromReg16(dspAddress, address, length, true); // Arduino 2 doesn't support restart natively O.o
-  #endif
+  Wire.requestFrom(dspAddress, length);    // request n bytes from slave device 
   
-  while(WIRE.available())         // slave may send less than requested
+  while(Wire.available())         // slave may send less than requested
   { 
-    data[index++] = WIRE.read();  // receive a byte as character    
+    data[index++] = Wire.read();  // receive a byte as character    
   } 
 }
 

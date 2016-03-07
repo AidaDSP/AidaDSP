@@ -2,7 +2,7 @@
   AidaDSP.h - Aida DSP library
  Copyright (c) 2015 Massimo Pennazio.  All right reserved.
  
- Version: 0.16 ADAU170x (Arduino)
+ Version: 0.16 ADAU144x (Energia)
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -22,19 +22,18 @@
 #ifndef _AIDA_DSP_H_
 #define _AIDA_DSP_H_
 
-#include <Arduino.h>
-#include <pins_arduino.h>
+#include <Energia.h>
+#include <pins_energia.h>
 #include <Wire.h>
 
 /************************************************
  *      DEFINES FOR HW USER CONFIGURATION       *
  ************************************************/
-#define SBOOT 12
-#define RESET 11
+#define SBOOT PB_7
+#define RESET PB_6
 
-#define ENCB 2
-#define ENCA 3
-#define PUSH1 4
+#define ENCB PA_6
+#define ENCA PA_7
 #define ENC_PUSH PUSH1
 
 #define POT4 A3

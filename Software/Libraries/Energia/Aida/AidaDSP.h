@@ -2,6 +2,8 @@
   AidaDSP.h - Aida DSP library
  Copyright (c) 2015 Massimo Pennazio.  All right reserved.
  
+ Version: 0.16 ADAU170x (Energia)
+ 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
@@ -24,9 +26,46 @@
 #include <pins_energia.h>
 #include <Wire.h>
 
-// -------------------------------------------------------------
-// FIXED POINT
-// -------------------------------------------------------------
+/************************************************
+ *      DEFINES FOR HW USER CONFIGURATION       *
+ ************************************************/
+#define SBOOT PB_7
+#define RESET PB_6
+
+#define ENCB PA_6
+#define ENCA PA_7
+#define ENC_PUSH PUSH1
+
+#define POT4 A3
+#define POT3 A2
+#define POT2 A1
+#define POT1 A0
+
+#define XXXX    POT4
+#define XXX     POT3
+#define XX      POT2
+#define X       POT1
+/************************************************
+ *     END DEFINES FOR HW USER CONFIGURATION    *
+ ************************************************/
+
+/************************************************
+ *        ENCODER DEFINES (do not edit)         *
+ ************************************************/
+#define PREV_MASK	0x1 //Mask for the previous state in determining direction of rotation.
+#define CURR_MASK 0x2 //Mask for the current state in determining direction of rotation.
+#define INVALID   0x3 //XORing two states where both bits have changed.
+
+#define ENC_RES_X4
+//define ENC_RES_X1
+//define ENC_RES_X2 // Not managed yet
+/************************************************
+ *      END ENCODER DEFINES (do not edit)       *
+ ************************************************/
+
+/************************************************
+ *          FIXED POINT (do not edit)           *
+ ************************************************/
 #define FIXED_BITS               32
 #define FIXED_WBITS               5
 #define FIXED_FBITS              23
@@ -39,36 +78,13 @@ inline int32_t FIXED_Mul(int32_t a, int32_t b)  // This function has to be decla
 {
   return(((int32_t)a*(int32_t)b) >> FIXED_FBITS);
 } 
-// -------------------------------------------------------------
-// END FIXED POINT
-// -------------------------------------------------------------
+/***********************************************
+ *         END FIXED POINT (do not edit)       *
+ ***********************************************/
 
-// ENCODER DEFINES
-#define PREV_MASK	0x1 //Mask for the previous state in determining direction of rotation.
-#define CURR_MASK 	0x2 //Mask for the current state in determining direction of rotation.
-#define INVALID   	0x3 //XORing two states where both bits have changed.
-
-// DEFINES FOR HW CONFIGURATION
-#define SBOOT PB_7
-#define RESET PB_6
-#define ENCA PA_7
-#define ENCB PA_6
-#define ENC_PUSH PUSH1
-
-#define ENC_RES_X4
-//define ENC_RES_X1
-//define ENC_RES_X2 // Not managed yet
-
-#define POT4 A3
-#define POT3 A2
-#define POT2 A1
-#define POT1 A0
-
-#define XXXX    POT4
-#define XXX     POT3
-#define XX      POT2
-#define FX      POT1
-
+/************************************************
+ *          DSP DEFINES (do not edit)           *
+ ************************************************/
 #define pi 3.1415926f
 #define FS 48000.00f
 
@@ -86,7 +102,9 @@ inline int32_t FIXED_Mul(int32_t a, int32_t b)  // This function has to be decla
 #define BesselLP       10
 #define BesselHP       11
 
-
+/************************************************
+ *          DSP TYPEDEFS (do not edit)          *
+ ************************************************/
 #define COMPRESSORWITHPOSTGAIN
 typedef struct compressor_t{
   float threshold;  // Range -90/+6 [dB]
@@ -105,7 +123,7 @@ typedef struct equalizer_t{
   float f0;         // Range 20-20000 [Hz]
   float boost;      // Range +/-15 [dB]
   unsigned char type;     // See defines section...
-  unsigned char phase;    // True -> in phase (0°) False -> -180°
+  unsigned char phase;    // 0 or False -> in phase (0°) 1 or True -> 180°
   unsigned char onoff;    // False -> off True -> on
 }equalizer;
 
@@ -114,11 +132,13 @@ typedef struct toneCtrl_t{
   float Boost_Treble_dB;
   float Freq_Bass;
   float Freq_Treble;
-  unsigned char phase;
+  unsigned char phase;    // 0 or False -> in phase (0°) 1 or True -> 180°    
   unsigned char onoff;    // False -> off True -> on
 }toneCtrl;
 
-// PUBLIC FUNCTIONS PROTOTYPES
+/************************************************
+ *           AIDA HIGH LEVEL FUNCTIONS          *
+ ************************************************/
 // Utilities
 void linspace(float x1, float x2, float n, float vect[]);
 void set_regulation_precision(uint8_t fine);
@@ -148,6 +168,7 @@ void CompressorRMS(uint8_t dspAddress, uint16_t address, compressor_t* compresso
 void CompressorPeak(uint8_t dspAddress, uint16_t address, compressor_t* compressor);   
 void readBack(uint8_t dspAddress, uint16_t address, uint16_t capturecount, float *value);
 void mux(uint8_t dspAddress, uint16_t address, uint8_t select, uint8_t nchannels);
+void muxnoiseless(uint8_t dspAddress, uint16_t address, uint8_t select);
 void hard_clip(uint8_t dspAddress, uint16_t address, float th_high, float th_low);
 void soft_clip(uint8_t dspAddress, uint16_t address, float alpha);
 void dc_source(uint8_t dspAddress, uint16_t address, float value);
@@ -155,17 +176,21 @@ void sine_source(uint8_t dspAddress, uint16_t address, float frequency);
 void sawtooth_source(uint8_t dspAddress, uint16_t address, float frequency);
 void square_source(uint8_t dspAddress, uint16_t address, float frequency);
 void triangle_source(uint8_t dspAddress, uint16_t address, float frequency);
+void delayCell(uint8_t dspAddress, uint16_t address, float delay);
 
-// PRIVATE FUNCTIONS PROTOTYPES (DO NOT EDIT)
+/************************************************
+ *    AIDA LOW LEVEL FUNCTIONS (do not edit)    *
+ ************************************************/
 void float_to_fixed(float value, uint8_t *buffer);
 void AIDA_WRITE_REGISTER(uint8_t dspAddress, uint16_t address, uint8_t length, uint8_t *data);
 void AIDA_WRITE_REGISTER_BLOCK(uint8_t dspAddress, uint16_t address, uint16_t length, const uint8_t *data);
 void AIDA_WRITE_VALUE(uint8_t dspAddress, uint16_t address, float value);
 void AIDA_SAFELOAD_WRITE_REGISTER(uint8_t dspAddress, uint16_t address, boolean finish, uint8_t *data);
 void AIDA_SAFELOAD_WRITE_VALUE(uint8_t dspAddress, uint16_t address, boolean finish, float value);
+void AIDA_SW_SAFELOAD_WRITE_REGISTER(uint8_t dspAddress, uint16_t address, boolean finish, uint8_t *data);
+void AIDA_SW_SAFELOAD_WRITE_VALUE(uint8_t dspAddress, uint16_t address, boolean finish, float value);
 void AIDA_SW_SAFELOAD_WRITE_VALUES(uint8_t dspAddress, uint16_t address, uint8_t nvalues, float *values);
 void AIDA_READ_REGISTER(uint8_t dspAddress, uint16_t address, uint8_t length, uint8_t *data);
 
 #endif
-
 
