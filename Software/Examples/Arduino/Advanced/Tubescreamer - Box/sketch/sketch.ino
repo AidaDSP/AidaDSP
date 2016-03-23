@@ -42,8 +42,8 @@
 // DEFINES USER INTERFACE
 #define DRIVE_MAX 100.0f
 #define DRIVE_MIN 0.0f
-#define TONE_MAX 1000.0f // Hz
-#define TONE_MIN 100.0f  // Hz
+#define TONE_MAX 4180.0f // Hz
+#define TONE_MIN 792.0f  // Hz
 #define MIX_MIN 0.0f
 #define MIX_MAX 100.0f
 
@@ -104,6 +104,8 @@ float param4_value = 0.00;
 
 equalizer_t tone_eq;
 equalizer_t opamp_eq;
+equalizer_t antialias_eq; 
+equalizer_t postdist_eq;
 
 float readback1 = 0.00;
 float maxreadback1 = 0.00;
@@ -200,17 +202,44 @@ void setup()
   param4_value = processencoder(MASTER_VOLUME_MIN, MASTER_VOLUME_MAX, param4_pulses); // Master Volume
   
   // Pre Gain
-  //gainCell(DEVICE_ADDR_7bit, PreGainAddr, 1.00);
+  gainCell(DEVICE_ADDR_7bit, PreGainAddr, 1.00);
   delayMicroseconds(100);
   
-  // Drive
-  //setDrive(param1_value);
-  opamp_eq.gain = 20.0; 
-  opamp_eq.f0 = 200.0;
+  // Opamp Highpass Filter
+  opamp_eq.gain = 1.0; 
+  opamp_eq.f0 = 153.9;
   opamp_eq.type = Highpass;
   opamp_eq.phase = false;
   opamp_eq.onoff = ON;
   EQ1stOrd(DEVICE_ADDR_7bit, OpampAddr, &opamp_eq);
+  delayMicroseconds(100);
+  
+  hard_clip(DEVICE_ADDR_7bit, PreGainLimitAddr, 1.0, -1.0);
+  delayMicroseconds(100);
+  
+  // Drive
+  setDrive(param1_value);
+  delayMicroseconds(100);
+  
+  // Anti-aliasing filter (lowpass before distortion)
+  antialias_eq.gain = 0.0; 
+  antialias_eq.f0 = 6000.0;
+  antialias_eq.type = Lowpass;
+  antialias_eq.phase = false;
+  antialias_eq.onoff = ON;
+  EQ1stOrd(DEVICE_ADDR_7bit, AntiAliasingFAddr, &antialias_eq);
+  delayMicroseconds(100);
+  
+  hard_clip(DEVICE_ADDR_7bit, PostGainLimitAddr, 1.0, -1.0);
+  delayMicroseconds(100);
+  
+  // Post-distortion lowpass filter
+  postdist_eq.gain = 0.0; 
+  postdist_eq.f0 = 24000.0;
+  postdist_eq.type = Lowpass;
+  postdist_eq.phase = false;
+  postdist_eq.onoff = OFF;
+  EQ1stOrd(DEVICE_ADDR_7bit, PostFAddr, &postdist_eq);
   delayMicroseconds(100);
   
   // Tone
@@ -250,7 +279,7 @@ void loop()
   {
     func_counter=0;
     param1_value = processpot(DRIVE_MIN, DRIVE_MAX, pot1); // Drive
-    //setDrive(param1_value);
+    setDrive(param1_value);
     oldpot1 = pot1;
   }
   
@@ -439,7 +468,7 @@ void loop()
     } // End switch func_counter
 
     // Display information for user
-    print_menu_putty();
+    //print_menu_putty();
     print_menu_lcd();
 
     prevtimec = timec;
@@ -498,7 +527,7 @@ void print_menu_putty(void)
   Serial.println(F(" %"));
   if(func_counter==3)
     Serial.print(F("    "));
-  Serial.print(F("Mst Vol: "));
+  Serial.print(F("Vol: "));
   Serial.print(param4_value, 1);
   Serial.println(F(" dB"));
   
@@ -576,9 +605,18 @@ void setDrive(float value)
   if(oldvalue != value)
   {
     if(value == 0.00)
-      drive = 0.00;
+      drive = 1.00;
     else
-      drive = value / 100.0; // scaling to 0-1.0 range...
+      drive = (value / 10.0) + 1.0;
+      //drive = value / 100.0; // Scaling to 0-1.0 range...
+    
+    gainCell(DEVICE_ADDR_7bit, Drive1Addr, 10.0);
+    delayMicroseconds(100);
+    gainCell(DEVICE_ADDR_7bit, Drive2Addr, drive);
+    delayMicroseconds(100);
+    
+    /* 
+    // Deprecated version
     a1 = 251.3184 + (drive * 2256.0);
     a2 = 21.2064;
     
@@ -596,7 +634,8 @@ void setDrive(float value)
       AIDA_SAFELOAD_WRITE_VALUE(DEVICE_ADDR_7bit, address++, false, coefficients[1]);
       AIDA_SAFELOAD_WRITE_VALUE(DEVICE_ADDR_7bit, address, true, coefficients[2]);
     #endif
-  
+    */
+    
     oldvalue = value;
   }
 }
