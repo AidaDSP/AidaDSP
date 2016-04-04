@@ -2,7 +2,7 @@
   AidaDSP.cpp - Aida DSP library
  Copyright (c) 2015 Massimo Pennazio.  All right reserved.
  
- Version: 0.16 ADAU170x (Arduino)
+ Version: 0.17 ADAU170x (Arduino)
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -949,9 +949,12 @@ void readBack(uint8_t dspAddress, uint16_t address, uint16_t capturecount, float
 
   AIDA_READ_REGISTER(dspAddress, address, 3, buf);
 
-  word32 = (buf[0]<<24 | buf[1]<<16 | buf[2]<<8)&0xFFFFFF00; // MSB first, convert to 5.27 format
+  word32 = ((uint32_t)buf[0]<<24 | (uint32_t)buf[1]<<16 | (uint32_t)buf[2]<<8)&0xFFFFFF00; // MSB first, convert to 5.27 format
+  
+  if(word32==0)
+    word32 = 1;
 
-  *value = ((float)word32/(1 << 27)); // I'm converting from 5.27 int32 to maintain sign
+  *value = ((float)word32/((uint32_t)1 << 27)); // I'm converting from 5.27 int32 to maintain sign
 }
 
 /**
@@ -1417,7 +1420,7 @@ void AIDA_READ_REGISTER(uint8_t dspAddress, uint16_t address, uint8_t length, ui
   WIRE.beginTransmission(dspAddress);  // Begin write
 
   // Send the internal address I want to read
-  LSByte = (byte)address & 0xFF;
+  LSByte = (uint8_t)address & 0xFF;
   MSByte = address >> 8;
   WIRE.write(MSByte);             // Sends High Address
   WIRE.write(LSByte);             // Sends Low Address
@@ -1431,7 +1434,7 @@ void AIDA_READ_REGISTER(uint8_t dspAddress, uint16_t address, uint8_t length, ui
   
   while(WIRE.available())         // slave may send less than requested
   { 
-    data[index++] = WIRE.read();  // receive a byte as character    
-  } 
+    data[index++] = WIRE.read();  // receive a byte as character
+  }
 }
 

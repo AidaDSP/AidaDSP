@@ -9,10 +9,10 @@ __Dipswitch I2C Addresses__
 
 Dip1 (Addr0) | Dip2 (Addr1) | I2C DSP Address (W)
 ------------ | ------------ | -------------------
-On | On | 0x68
-On | Off | 0x6A
-Off | On | 0x6C
-Off | Off | 0x6E
+Off | Off | 0x68
+Off | On | 0x6A
+On | Off | 0x6C
+On | On | 0x6E
 
 __Used Pins VS Platforms__
 

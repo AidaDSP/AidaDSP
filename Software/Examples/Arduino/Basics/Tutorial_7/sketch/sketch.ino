@@ -2,7 +2,7 @@
  AIDA Tutorial_7 Sketch
  	
  This sketch controls a multiple signal generator (synthesizer) with average/rms/peak/raw volume readback using the 
- structure of Template1.
+ structure of Template1. A DC source with dedicated readback has been added for testing purposes.
  This sketch was written for Arduino, and will not work on other boards.
  	
  The circuit:
@@ -37,8 +37,10 @@
 #define PIN_LED  13
 
 // DEFINES USER INTERFACE
-#define VOLMAX 0.00
-#define VOLMIN -80.00
+#define VOLMAX 0.00f
+#define VOLMIN -80.00f
+#define DCMIN -16.00f
+#define DCMAX 15.999f
 
 #define ON 1
 #define OFF 0
@@ -63,10 +65,12 @@ uint16_t PotValue = 0;
 uint32_t timec=0, prevtimec=0;
 
 float volume = 0.00;
+float dc_value = 0.00;
 float readback1 = 0.00;
 float readback2 = 0.00;
 float readback3 = 0.00;
 float readback4 = 0.00;
+float readback5 = 0.00;
 
 void setup()
 {
@@ -136,11 +140,19 @@ void loop()
     Serial.println(F("press button for 1 sec to enter submenu."));
     Serial.println("");
 
+    dc_value = processencoder(DCMIN, DCMAX, getPulses()); 
+    dc_source(DEVICE_ADDR_7bit, DC1Addr, dc_value); // Here set a debug value for readback function
+
     readBack(DEVICE_ADDR_7bit, ReadBackAlg1Addr, 0x0312, &readback1); // running average
     readBack(DEVICE_ADDR_7bit, ReadBackAlg2Addr, 0x031E, &readback2); // rms
     readBack(DEVICE_ADDR_7bit, ReadBackAlg3Addr, 0x032A, &readback3); // peak
     readBack(DEVICE_ADDR_7bit, ReadBackAlg4Addr, 0x0336, &readback4); // raw abs
-    
+    readBack(DEVICE_ADDR_7bit, ReadBackAlg5Addr, 0x0172, &readback5); // dc value
+
+    Serial.print(F(" Encoder pulses: "));
+    Serial.println(getPulses(), DEC);
+    Serial.println("");
+    Serial.println("");
     Serial.print(F(" Running Avg. : ")); // Print linear values (max +/-1.00) for readback values
     Serial.println(readback1, 1);
     Serial.print(F(" RMS : "));
@@ -149,11 +161,11 @@ void loop()
     Serial.println(readback3, 1);
     Serial.print(F(" Raw abs : "));
     Serial.println(readback4, 1);
-
-    Serial.print(F(" Encoder pulses: "));
-    Serial.println(getPulses(), DEC);
+    Serial.print(F(" DC test : "));
+    Serial.println(readback5, 3);
     Serial.println("");
     Serial.println("");
+    
     if(mute == OFF)
     {
       if(submenu == OFF)
@@ -164,6 +176,7 @@ void loop()
           setPulses(OldPulses);
         }
         volume = processencoder(VOLMIN, VOLMAX, getPulses()); // dB
+        
         Serial.print(F(" Master Vol. : "));
         Serial.print(volume, 1);
         Serial.println(F("dB"));
