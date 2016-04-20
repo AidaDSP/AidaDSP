@@ -1,10 +1,28 @@
-# AidaDSP
+Aida DSP is a shield for Arduino and Energia (TM4C123) with a 24bit/48-96-192kHz DSP on it.
 
-AidaDSP is a shield for Arduino and TivaC boards.
-Basically, you have a small but powerful DSP from Analog Devices
-capable of 24bit-48/96/192kHz audio processing on the fly.
+### Salient specs
+- Compact design size 105x54x35mm
+- Low noise design for audio applications
+- 2 mono inputs 4 mono outputs 
+- Expansion connector with available signals from DSP
+- Available open source examples for Arduino Uno/Mega/Due and Energia (TM4C123)
 
-What you can do with this shield?
+### How it works
+DSP is programmed with Sigma Studio. This is an extremely intuitive graphical design 
+tool, with a smooth learning curve. When you've tweaked your audio algorithm enough
+you can generate an .xml file which contains DSP firmware and then with our Java tool
+you can generate a C header file to be used in the Arduino IDE.
+
+Now you can code a sketch that communicates with the DSP in real time to change its cells (audio algorithm blocks) using [Aida DSP official Arduino API library](https://github.com/AidaDSP/AidaDSP).
+
+Basically you can manage your UI (user interface: buttons, faders, etc.) with Arduino and then
+let the DSP do the whole hard work of processing audio with superb quality. For example you can use the DSP
+to generate a sine tone and change its frequency and amplitude with a pot wired to Arduino's analog input. 
+Check out our [examples](https://github.com/AidaDSP/AidaDSP) on Github!
+
+
+
+### Typical applications
 - 1st and 2nd order equalizers with adjustable f, Q, gain
 - Processors with peak or rms detection for monochannel
   and multichannel dynamics
@@ -20,20 +38,8 @@ What you can do with this shield?
 - Level detectors
 - GPIO control and conditioning
 - Special function to update DSP parameters in real-time without clicks and pops
-- More...since you can program your own processing block at low level
- 
-Thanks to our library (AidaDSP's official library on Github https://github.com/AidaDSP) you can
-integrate the control of this DSP in the Arduino enviroment.
-If the DSP itself it's interesting, the interface with Arduino gives you outstanding possibilities since
-you can manage communications and I/O with your preferred microcontroller while the DSP is processing audio
-on its own, and you can change DSP algorithms parameters in real-time when you just want to do it.
+- More...
 
-Audio enthusiasts, this board is for you!!!
+### Audio enthusiasts and engineers, this board is for you!
 
-NOTE: this solution is SUPERIOR to ANY present and future DSP system based on a microcontroller with external Codec.
-Microcontrollers, once very similar to DSPs, are a whole DIFFERENT story. The hardware of this DSP is DEDICATED
-for audio processing, for example you have 56-bit accumulator wich gives you room for internal algorithm gains without the 
-risk for clipping. Ready to use algorithms cell has been coded and optimized in ASSEMBLER by Analog Devices Engineers, which work at the top of audio industry from 40 years.
-
-2015 Aida Team
-www.aidadsp.com
+Aida DSP Team 2016 www.aidadsp.com
