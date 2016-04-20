@@ -20,7 +20,7 @@ Now you can code a sketch that communicates with the DSP in real time to change 
 Basically you can manage your UI (user interface: buttons, faders, etc.) with Arduino and then
 let the DSP do the whole hard work of processing audio with superb quality. For example you can use the DSP
 to generate a sine tone and change its frequency and amplitude with a pot wired to Arduino's analog input. 
-Check out our [examples](https://github.com/AidaDSP/AidaDSP) on Github!
+Check out our [examples](https://github.com/AidaDSP/AidaDSP/tree/master/Software/Examples) on Github!
 
 ### Typical applications
 - 1st and 2nd order equalizers with adjustable f, Q, gain
@@ -41,5 +41,13 @@ Check out our [examples](https://github.com/AidaDSP/AidaDSP) on Github!
 - More...
 
 ### Audio enthusiasts and engineers, this board is for you!
+
+### More info
+
+- [Examples](https://github.com/AidaDSP/AidaDSP/tree/master/Software/Examples)
+- [Arduino/Energia Libraries](https://github.com/AidaDSP/AidaDSP/tree/master/Software/Libraries)
+- [Hardware specs & additional informations](https://github.com/AidaDSP/AidaDSP/tree/master/Hardware)
+- [Wiki](https://github.com/AidaDSP/AidaDSP/wiki)
+- *Where to BUY:* [Tindie](https://www.tindie.com/products/MaxAidaDSP/aida-dsp/) and [Aida DSP Store](http://www.aidadsp.com/#!/STORE)
 
 Aida DSP Team 2016 www.aidadsp.com
