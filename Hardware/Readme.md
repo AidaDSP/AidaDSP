@@ -1,4 +1,4 @@
-# Hardware infos
+# Hardware specs & additional informations
 
 __Leds__
 - LED1 goes to MP1 digi I/O of DSP (see exp. connector)
