@@ -36,10 +36,15 @@ Project's name | Compatibility | Function | Status | Link
 **Reverb Mono** | Aida DSP "La Prima" | a basic reverb algorithm with dry/wet control | Work In Progress | ... 
 **Vocoder** | Aida DSP "La Prima" | well, this ROCKS!!! | Work In Progress | ... 
 
+
+
 NOTES: 
 - templates and basics uses encoder switch and knob and PuTTY to do everything. Mount Aida DSP and
 you have all that you need to start audio processing! Advanced / User Projects may use external 
 hardware (pots, switches, displays...ecc) to address specific purposes. See comments inside sketches for details.
+
+
+
 
 AidaDSP Team 2016
 www.aidadsp.com
