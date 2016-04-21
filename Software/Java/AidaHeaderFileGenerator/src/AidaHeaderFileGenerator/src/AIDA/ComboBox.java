@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Frame;
+import java.awt.Image;
 import java.awt.Panel;
 import java.awt.TextArea;
 import java.awt.event.ActionEvent;
@@ -43,6 +44,7 @@ public class ComboBox extends JFrame {
 		super("Select DSP please");
 		
 		setLayout(new FlowLayout(FlowLayout.LEFT, 10, 10));
+    this.setIconImage(new ImageIcon("logo_AIDA.jpg").getImage());
 
 		String[] microTitle = new String[] { "ADAU144x","ADAU170x" };
 

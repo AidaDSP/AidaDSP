@@ -1,5 +1,7 @@
 # Hardware specs & additional informations
 
+### Aida DSP "La Prima"
+
 __Leds__
 - LED1 goes to MP1 digi I/O of DSP (see exp. connector)
 - LED2 goes to MP10
@@ -42,6 +44,8 @@ Digital Connections | I2S, TDM
 GPIOs | See pinout expansion connector 
 Dimensions | 105mm x 54mm x 35mm
 Power Supply | 5.0Vdc, powered by Arduino/TivaC
+
+### Aida DSP "Box"
 
 
 

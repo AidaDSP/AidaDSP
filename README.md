@@ -13,7 +13,7 @@ Aida DSP "La Prima" is a shield for Arduino and Energia (TM4C123) with a 24bit/4
 ### How it works
 DSP is programmed with Sigma Studio. This is an extremely intuitive graphical design 
 tool, with a smooth learning curve. When you've tweaked your audio algorithm enough
-you can generate an .xml file which contains DSP firmware and then with our Java tool
+you can generate an .xml file which contains DSP firmware and then with our [Java tool](https://github.com/AidaDSP/AidaDSP/tree/master/Software/Java/AidaHeaderFileGenerator/bin)
 you can generate a C header file to be used in the Arduino IDE.
 
 Now you can code a sketch that communicates with the DSP in real time to change its cells (audio algorithm blocks) using [Aida DSP official Arduino API library](https://github.com/AidaDSP/AidaDSP).
@@ -49,6 +49,6 @@ Check out our [examples](https://github.com/AidaDSP/AidaDSP/tree/master/Software
 - [Arduino/Energia Libraries](https://github.com/AidaDSP/AidaDSP/tree/master/Software/Libraries)
 - [Hardware specs & additional informations](https://github.com/AidaDSP/AidaDSP/tree/master/Hardware)
 - [Wiki](https://github.com/AidaDSP/AidaDSP/wiki)
-- Where to BUY: [Tindie](https://www.tindie.com/products/MaxAidaDSP/aida-dsp/) and [Aida DSP Store](http://www.aidadsp.com/#!/STORE)
+- **Where to BUY:** [Tindie](https://www.tindie.com/products/MaxAidaDSP/aida-dsp/) and [Aida DSP Store](http://www.aidadsp.com/#!/STORE)
 
 Aida DSP Team 2016 www.aidadsp.com

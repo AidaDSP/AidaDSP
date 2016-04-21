@@ -1,4 +1,4 @@
-//VERSION 27.11.2015 11:00 A.M.
+//VERSION 21.04.2016 11:00 A.M.
 /*
   AIDA_header_file_generator.java - Aida DSP Java Class
 Copyright (c) 2015 Gaetano Grano.  All right reserved.
@@ -53,7 +53,7 @@ public class AIDA_header_file_generator extends Frame implements ActionListener 
 	private String OSName, OSversion, OSarchitecture, JVruntypeVersion;
 	public static boolean okButtonPressed = false;
 	private String[] addresses_vector = new String[4];
-	private static String version = "VERSION 27.11.2015 11:00 A.M.";
+	private static String version = "VERSION 21.04.2016 11:00 A.M.";
 	static String blackListChars = "[-. /|><()=%&?!*+]";
 	
 
@@ -456,31 +456,52 @@ public class AIDA_header_file_generator extends Frame implements ActionListener 
 							+ suffix + "Data[" + size + "]={");
 
 					if (prefix.contains("reg") == true) {
-						fw.newLine();
-						for (int j = 0; j < Integer.parseInt(size) / 4 - 1; j++) {
-							fw.write(buf.substring(j * 24, (j + 1) * 24));
+						fw.newLine();					
+            int last_index=0;
+						int block_in_line=0;						
+						buf=buf.concat(", "); // now buf end with "0x00, " but I have to close the line without ", "
+						int buf_length=buf.length();
+						for (int j = 0; j < ((buf_length/6)-1); j++) { //every line contains 
+							fw.write(buf.substring(last_index, last_index + 6));
+							last_index=last_index + 6;
+							block_in_line=block_in_line+1;
+							if(block_in_line==4){ // if I write 4 block I can start with a new line
+								fw.newLine();
+								block_in_line=0;
+							}
 							fw.flush();
-							fw.newLine();
 						}
-						fw.write(buf.substring((buf.length() - 22),
-								buf.length())
-								+ "};" + "\n\n\r");
-					} else if (name.compareTo("ProgramData") == 0) {
-						fw.newLine();
-						for (int j = 0; j < Integer.parseInt(size) / 5 - 1; j++) {
-							fw.write(buf.substring(j * 30, (j + 1) * 30));
-							fw.flush();
-							fw.newLine();
-						}
-						fw.write(buf.substring((buf.length() - 28),
-								buf.length())
-								+ "};" + "\n\n\r");
+
+						fw.write(buf.substring(buf_length-6, buf_length-2));//Now I add last block "0x0c, " but without ", " , so I add only "0x0c"
+						fw.write("};" + "\n\n\r");
 						fw.flush();
-					} else {
+					} 
+          else if (name.compareTo("ProgramData") == 0) {
+						fw.newLine();		
+            int last_index=0;
+						int block_in_line=0;						
+						buf=buf.concat(", "); // now buf end with "0x00, " but I have to close the line without ", "						
+						int buf_length=buf.length();  
+						for (int j = 0; j < ((buf_length/6)-1); j++) { //every line contains n symbol like "0x0C, " 6 char long but I do not print last block "0x00, " because the string must be colse without ", "
+							fw.write(buf.substring(last_index, last_index + 6));
+							last_index=last_index + 6;
+							block_in_line=block_in_line+1;
+							if(block_in_line==5){ // if I write 5 block I can start with a new line
+								fw.newLine();
+								block_in_line=0;
+							}
+							fw.flush();
+						}
+						fw.write(buf.substring(buf_length-6, buf_length-2));//Now I add last block "0x0c, " but without ", " , so I add only "0x0c"
+						fw.write("};" + "\n\n\r");
+						fw.flush();
+					} 
+          else {
 						fw.write(buf + "};" + "\n\n\r");
 						fw.flush();
 					}
-				} else {
+				} 
+        else {
 					if (name.contains("ReadBack") == true) {
 						fw.write("const PROGMEM unsigned char " + prefix + name
 								+ suffix + "Data[" + "]={");
