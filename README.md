@@ -40,7 +40,7 @@ Check out our [examples](https://github.com/AidaDSP/AidaDSP/tree/master/Software
 - Special function to update DSP parameters in real-time without clicks and pops
 - More...
 
-### Audio enthusiasts and engineers, this board is for you!
+### Audio enthusiasts and audio makers, this board is for you!
 
 ### More info
 
