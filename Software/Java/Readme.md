@@ -9,11 +9,10 @@ Our program parse this .xml file and generates a C header file (.h) and write in
 run your audio project. You can download a binary (.jar) [here](../Java/AidaHeaderFileGenerator/bin) 
 
 * __AidaDSPLoader.jar (This program has not been fully tested please be patient...)__
-This is a command line utility for Windows and Linux which
-you can use to "send" a Sigma Studio .xml exported file 
-to an Arduino board listening on COM port 
+This is a command line utility for Windows and Linux which you can use to "send" a Sigma Studio .xml exported file 
+to an Arduino board listening on COM port. You can download a binary (.jar) [here](../Java/AidaDSPLoader/bin) 
   * Sintax: AidaDSPLoader [dir] [filename] [comport]
   * Example: AidaDSPLoader C:\AidaDSP myfile COM2
   * Sketch to use with: [sketch.ino](../Examples) 
-You can download a binary (.jar) [here](../Java/AidaDSPLoader/bin) 
+
 
