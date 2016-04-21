@@ -2,7 +2,7 @@ List of sofware examples to be used with Aida DSP board
 
 ### TEMPLATES 
 Start immediately coding with Aida DSP. A minimal UI (user interface) composed
-only by a switch and an encoder knob (soldered on Aida DSP board) and a PuTTY based 
+only by a switch, some leds and an encoder knob (all them soldered on Aida DSP board) and a PuTTY based 
 GUI is simple but powerful enough for testing many of your audio projects. Then when
 your project is working you can always migrate to a more complex UI.
 
@@ -39,8 +39,10 @@ Project's name | Compatibility | Function | Status | Link
 
 
 NOTES: 
-- templates and basics uses encoder switch and knob and PuTTY to do everything. Mount Aida DSP and
-you have all that you need to start audio processing! Advanced / User Projects may use external 
+- The usage of [PuTTY](http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html) is very simple. You need
+to install the USB drivers of your controller board (ex. Arduino) which will adds a **COM Port** to your Pc. Then 
+you must open a PuTTY serial com session at **115200** (baud rate) 8 bits 1 stop bits Parity:None Flow Control:None  
+- Advanced / User Projects may use external 
 hardware (pots, switches, displays...ecc) to address specific purposes. See comments inside sketches for details.
 
 
