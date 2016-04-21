@@ -38,7 +38,7 @@ Project's name | Compatibility | Function | Status | Link
 
 
 
-NOTES: 
+**NOTES**: 
 
 - The usage of [PuTTY](http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html) is very simple. You need
 to install the USB drivers of your controller board (ex. Arduino) which will adds a **COM Port** to your Pc. Then 
