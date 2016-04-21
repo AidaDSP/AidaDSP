@@ -16,7 +16,7 @@ tool, with a smooth learning curve. When you've tweaked your audio algorithm eno
 you can generate an .xml file which contains DSP firmware and then with our [Java tool](https://github.com/AidaDSP/AidaDSP/tree/master/Software/Java/AidaHeaderFileGenerator/bin)
 you can generate a C header file to be used in the Arduino IDE.
 
-Now you can code a sketch that communicates with the DSP in real time to change its cells (audio algorithm blocks) using [Aida DSP official Arduino API library](https://github.com/AidaDSP/AidaDSP).
+Now you can code a sketch that communicates with the DSP in real time to change its cells (audio algorithm blocks) using [Aida DSP official Arduino API library](https://github.com/AidaDSP/AidaDSP/tree/master/Software/Libraries).
 
 Basically you can manage your UI (user interface: buttons, faders, etc.) with Arduino and then
 let the DSP do the whole hard work of processing audio with superb quality. For example you can use the DSP
