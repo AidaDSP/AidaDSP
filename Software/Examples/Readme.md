@@ -39,9 +39,16 @@ Project's name | Compatibility | Function | Status | Link
 
 
 NOTES: 
+
 - The usage of [PuTTY](http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html) is very simple. You need
 to install the USB drivers of your controller board (ex. Arduino) which will adds a **COM Port** to your Pc. Then 
-you must open a PuTTY serial com session at **115200** (baud rate) 8 bits 1 stop bits Parity:None Flow Control:None  
+you must open a **PuTTY** serial com session with
+ * **115200** (baud rate) 
+ * 8 bits 
+ * 1 stop bits 
+ * Parity:None 
+ * Flow Control:None  
+ 
 - Advanced / User Projects may use external 
 hardware (pots, switches, displays...ecc) to address specific purposes. See comments inside sketches for details.
 
