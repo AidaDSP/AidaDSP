@@ -34,8 +34,7 @@ Check out our [examples](https://github.com/AidaDSP/AidaDSP/tree/master/Software
 - Delay 
 - Stereo enhancement
 - Dynamic bass boost
-- Noise and tone sources
-- FIR filters
+- FIR & IIR filters
 - Level detectors
 - GPIO control and conditioning
 - Special function to update DSP parameters in real-time without clicks and pops
