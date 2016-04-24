@@ -38,7 +38,7 @@ Analog Audio Connections | 1 stereo mini jack in 2 stereo mini jack out
 Input Level | 2.0Vrms (5.66Vpp, 8.23dBu)
 Input Impedance | 20kohm
 Output Level | 0.9Vrms (2.5Vpp, 1.30dBu) 
-Output Impedance | High (Expected load 20k)
+Output Impedance | High (expected load >=20k)
 Dynamic Range | 100dB ADC, 100dB DAC A-weighted
 Digital Connections | I2S, TDM
 GPIOs | See pinout expansion connector 
