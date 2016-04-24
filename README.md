@@ -49,6 +49,6 @@ Check out our [examples](https://github.com/AidaDSP/AidaDSP/tree/master/Software
 - [Java Tools](https://github.com/AidaDSP/AidaDSP/tree/master/Software/Java)
 - [Hardware specs & additional informations](https://github.com/AidaDSP/AidaDSP/tree/master/Hardware)
 - [Wiki](https://github.com/AidaDSP/AidaDSP/wiki)
-- **Where to BUY:** [Tindie](https://www.tindie.com/products/MaxAidaDSP/aida-dsp/) and [Aida DSP Store](http://www.aidadsp.com/#!/STORE)
+- **Where to BUY:** [Tindie](https://www.tindie.com/products/MaxAidaDSP/aida-dsp-la-prima/) and [Aida DSP Store](http://www.aidadsp.com/#!/STORE)
 
 Aida DSP Team 2016 www.aidadsp.com
