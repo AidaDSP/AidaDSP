@@ -2,7 +2,7 @@
   AidaDSP.h - Aida DSP library
  Copyright (c) 2015 Massimo Pennazio.  All right reserved.
  
- Version: 0.16 ADAU144x (Arduino)
+ Version: 0.17 ADAU144x (Arduino)
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public

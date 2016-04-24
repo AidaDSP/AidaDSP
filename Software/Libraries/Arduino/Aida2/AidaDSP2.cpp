@@ -2,7 +2,7 @@
   AidaDSP.cpp - Aida DSP library
  Copyright (c) 2015 Massimo Pennazio.  All right reserved.
  
- Version: 0.16 ADAU144x (Arduino)
+ Version: 0.17 ADAU144x (Arduino)
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -1369,7 +1369,7 @@ void AIDA_SW_SAFELOAD_WRITE_VALUE(uint8_t dspAddress, uint16_t address, boolean 
   sw_safeload_count++;
 	if(finish == true || sw_safeload_count == 5)  // Max 5 safeload memory registers
 	{
-		value32b = sw_safeload_count+1;
+		value32b = sw_safeload_count;
 		buf[0] = (value32b>>24)&0xFF; // MSB first
 		buf[1] = (value32b>>16)&0xFF;
 		buf[2] = (value32b>>8)&0xFF;
