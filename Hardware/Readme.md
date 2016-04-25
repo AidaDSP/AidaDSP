@@ -45,7 +45,10 @@ GPIOs | See pinout expansion connector
 Dimensions | 105mm x 54mm x 35mm
 Power Supply | 5.0Vdc, powered by Arduino/TivaC
 
-### Aida DSP "Box"
+### Schematics
+* At the moment we cannot publish our schematics, we are strong supporters
+of open source so in the future we'll make them available to anyone. In the meantime,
+forgive us, we can send schematics to our customers if they need them. Contact us at max@aidadsp.com
 
 
 
