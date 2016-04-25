@@ -7,9 +7,9 @@ GUI is simple but powerful enough for testing many of your audio projects. Then 
 your project is working you can always migrate to a more complex UI.
 
 - Template_1 	dual function with single switch (fast/long pressure) and encoder knob position
-				switch between master volume control and preset selection
+				allow the user to move between master volume control and preset selection
 - Template_2    dual function with single swith (fast/long pressure) and encoder knob position 
-				FX disable/enable and circular property selector to modify one parameter at a time
+				allow the user to engage a FX disable/enable and a circular property selector to modify one parameter at a time
 
 ### BASICS 
 These examples show the basic usage of the Aida DSP API when used with Arduino and Energia
