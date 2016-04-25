@@ -3,7 +3,7 @@
  	
  This sketch is a the first attempt to write program and control ADAU144x DSP.
  It uses the newest version of Aida DSP API to test Sw Safeload feature.
- This sketch was written for Arduino, and will not work on other boards.
+ This sketch was written for Energia, and will not work on other boards.
  	
  The circuit:
  I/O:
@@ -19,7 +19,7 @@
  * Output range ???
  
  PC:
- * Please connect with PuTTY on Arduino USB Serial with a PC for a minimal user interface
+ * Please connect with PuTTY on Stellaris/TivaC launchpad USB Serial with a PC for a minimal user interface
  
  NOTE:
  Further modifications on main Aida DSP API will follow. It takes time because I want
@@ -32,11 +32,11 @@
  
  */
 
-#include <Arduino.h>
-#include <pins_arduino.h>
+#include <Energia.h>
+#include <pins_energia.h>
 #include <Wire.h>
 #include "AidaFW.h"
-#include "AidaDSP.h"
+#include "AidaDSP2.h"
 
 #define EVER (;;)
 
@@ -48,12 +48,10 @@
 #define OFF 0
 
 // I/O
-#define PIN_LED  13
 
 // FUNCTION PROTOTYPES
 void spettacolino(void);
 void clearAndHome(void);
-void VolumeControl(float value);
 void check_program(void);
 void check_param(void);
 
@@ -78,18 +76,20 @@ void setup()
 {
   // put your setup code here, to run once:
   // I/O
-  pinMode(PIN_LED, OUTPUT);
+  pinMode(GREEN_LED, OUTPUT);
+  pinMode(RED_LED, OUTPUT);
+  pinMode(BLUE_LED, OUTPUT);
 
   // open the USBSerial port
   Serial.begin(115200);
   clearAndHome();
-  Serial.println(F("Aida ADAU144x control with ARDUINO")); // Welcome message
+  Serial.println(F("Aida ADAU144x control with LAUNCHPAD")); // Welcome message
   Serial.print(F("0x"));
   Serial.println((DEVICE_ADDR_7bit<<1)&~0x01, HEX);
 
   // DSP board
   InitAida();	// Initialize DSP board
-  digitalWrite(RESET, HIGH); // Wake up DSP
+  //digitalWrite(RESET, HIGH); // Wake up DSP
   delay(100);  // Start-up delay for DSP
   program_download();    // Here we load program, parameters and hardware configuration to DSP
   delay(20);
@@ -98,10 +98,8 @@ void setup()
   //check_param(); // !!! Debug
   delay(5);
   spettacolino();
-  //MasterVolume(DEVICE_ADDR_7bit, Single1, 1.00);    // With DAC in mute, set volume to 1
-  VolumeControl(1.00);
-  delay(1);   
-  //AIDA_WRITE_REGISTER_BLOCK(DEVICE_ADDR_7bit, CoreRegisterR4Addr, CoreRegisterR4Size, CoreRegisterR4Data);    // Mute DAC Off
+  MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolumeAddr, 1.00);    // With DAC in mute, set volume to 1
+  delay(1);  
 }
 
 void loop()
@@ -110,7 +108,7 @@ void loop()
 
   if(digitalRead(ENC_PUSH)==LOW)  
   {
-    digitalWrite(PIN_LED, HIGH);
+    digitalWrite(GREEN_LED, HIGH);
     delay(50);  // debounce
     if(digitalRead(ENC_PUSH)==LOW)
     {
@@ -126,7 +124,7 @@ void loop()
     else
       function = 0;  // No function triggered on switch
     count = 0;
-    digitalWrite(PIN_LED, LOW);
+    digitalWrite(GREEN_LED, LOW);
   }
 
   if(function==1)
@@ -139,12 +137,12 @@ void loop()
   }
 
   time = millis();
-  if(time-prevtime >= 1000)  // Here we manage control interface every second
+  if(time-prevtime >= 250)  // Here we manage control interface every 250ms
   {
     clearAndHome();    // !!!Warning use with real terminal emulation program
     Serial.println(F("********************************"));
     Serial.println(F("*    User control interface    *"));
-    Serial.println(F("*    AIDA ADAU144x Sketch    *"));
+    Serial.println(F("*    AIDA ADAU144x Sketch      *"));
     Serial.println(F("********************************"));
     Serial.println(F("Press button rapidly to switch mute on/off,"));
     Serial.println(F("press button for 1 sec to enter submenu."));
@@ -162,25 +160,23 @@ void loop()
           setPulses(OldPulses);
         }
         volume = processencoder(VOLMIN, VOLMAX, getPulses());
-
+        volume -= 10.0;
+        
         Serial.print(F("Master Vol. "));
         Serial.print(volume, 1);
         Serial.println(F("dB"));
 
-        volume = pow(10, volume/20);    // From dB to linear conversion --> DSP takes only linear values in 5.28 fixed point format!!!
-        //MasterVolume(DEVICE_ADDR_7bit, Single1, volume);
-        VolumeControl(volume);
+        volume = pow(10, volume/20.0);    // From dB to linear conversion --> DSP takes only linear values in 5.28 fixed point format!!!
+        MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolumeAddr, volume);
       }
       else
       {
-        //MasterVolume(DEVICE_ADDR_7bit, Single1, volume);
-        VolumeControl(volume);
+        MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolumeAddr, volume);
       }			
     }
     else if(mute == ON)
     {
-      //MasterVolume(DEVICE_ADDR_7bit, Single1, 0.00);
-      VolumeControl(0.00);
+      MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolumeAddr, 0.00);
       Serial.println(F("mute on"));
     }
     if(submenu==ON)
@@ -196,16 +192,20 @@ void loop()
       switch(preset)
       {
       case 1:
-        Serial.println(F(" Name this preset..."));
+        Serial.println(F(" 1000Hz..."));
+        sine_source(DEVICE_ADDR_7bit, Tone1Addr, 1000.0);
         break;
       case 2:
-        Serial.println(F(" Name this preset..."));
+        Serial.println(F(" 2000Hz..."));
+        sine_source(DEVICE_ADDR_7bit, Tone1Addr, 2000.0);
         break;
       case 3:
-        Serial.println(F(" Name this preset..."));
+        Serial.println(F(" 3000Hz..."));
+        sine_source(DEVICE_ADDR_7bit, Tone1Addr, 3000.0);
         break;
       case 4:
-        Serial.println(F(" Name this preset..."));
+        Serial.println(F(" 4000Hz..."));
+        sine_source(DEVICE_ADDR_7bit, Tone1Addr, 4000.0);
         break;
       }
 
@@ -225,15 +225,26 @@ void loop()
 
 } // End void loop
 
-void spettacolino(void)
+void spettacolino()
 {
   byte i;
-  byte status = 0x00;
+  byte count = 0x00;
 
   for(i=0;i<6;i++)
   {
-    status ^= 1;
-	pinMode(PIN_LED, status);
+    count += 1;
+    if(count==1)
+      digitalWrite(RED_LED, HIGH);   
+    else if(count==2)
+      digitalWrite(GREEN_LED, HIGH);
+    else{
+      digitalWrite(BLUE_LED, HIGH);
+      count=0;
+    }
+    delay(250);
+    digitalWrite(RED_LED, LOW);
+    digitalWrite(GREEN_LED, LOW);
+    digitalWrite(BLUE_LED, LOW);
     delay(250);
   }
 }
@@ -246,49 +257,18 @@ void clearAndHome(void)
   Serial.print("[H"); // cursor to home
 }
 
-// Write Volume linear value onto DSP with Sw Safeload
-void VolumeControl(float value)  // Use this function until I adjust code for MasterVolume in Aida DSP API
-{
-  /*float data[5];
-  
-  memset(data, 0.00, 5);
-  data[0] = value;
-  
-  AIDA_SW_SAFELOAD_WRITE_VALUES(DEVICE_ADDR_7bit, Single1, 1, data);*/
-  
-  uint8_t buf[8];
-  
-  memset(buf, 0, 8);
-  
-  float_to_fixed(value, buf);
-  
-  AIDA_WRITE_REGISTER_BLOCK(DEVICE_ADDR_7bit, Single1, 4, buf); // Gain 
-  
-  // Writing constants to NonModuloRAM
-  buf[0] = 0x00;  // Alpha 1 = 0.999
-  buf[1] = 0x7F;
-  buf[2] = 0xF2;
-  buf[3] = 0x59;
-  
-  buf[4] = 0x00; // Alpha 2 = 0.0004
-  buf[5] = 0x00;
-  buf[6] = 0x0D;
-  buf[7] = 0xA7;
-  AIDA_WRITE_REGISTER_BLOCK(DEVICE_ADDR_7bit, 24574, 8, buf); // Alpha
-}
-
 void check_program(void) 
 {
   uint8_t value_wr = 0;
   uint8_t buff_r[6];
   uint8_t value_r;
-  uint16_t addr = progDataAddr;
+  uint16_t addr = ProgramDataAddr;
   uint16_t i, j, errors;
   
   Serial.println(F("Program checking..."));
   
   errors = 0;
-  for(i=0;i<progDataSize;i+=6) // Program address 8192 to 12287 6 bytes read write
+  for(i=0;i<ProgramDataSize;i+=6) // Program address 8192 to 12287 6 bytes read write
   {
     memset(buff_r, 0, 6);
     AIDA_READ_REGISTER(DEVICE_ADDR_7bit, addr, 6, buff_r); 
@@ -296,9 +276,9 @@ void check_program(void)
     {
       #ifdef __AVR__
       //value_wr = pgm_read_byte_far(&progDataData[i+j]);
-      value_wr = pgm_read_byte_near(&progDataData[i+j]);
+      value_wr = pgm_read_byte_near(&ProgramDataData[i+j]);
       #else
-      value_wr = progDataData[i+j];
+      value_wr = ProgramDataData[i+j];
       #endif
       value_r = buff_r[j];
       if(value_wr != value_r)
@@ -342,13 +322,13 @@ void check_param(void)
   uint8_t value_wr = 0;
   uint8_t buff_r[4];
   uint8_t value_r;
-  uint16_t addr = ParamAddr;
+  uint16_t addr = regParamAddr;
   uint16_t i, j, errors;
   
   Serial.println(F("Parameter checking..."));
   
   errors = 0;
-  for(i=0;i<ParamSize;i+=4) // 0 to 4095 4 bytes read write
+  for(i=0;i<regParamSize;i+=4) // 0 to 4095 4 bytes read write
   {
     memset(buff_r, 0, 4);
     AIDA_READ_REGISTER(DEVICE_ADDR_7bit, addr, 4, buff_r); 
@@ -356,9 +336,9 @@ void check_param(void)
     {
       #ifdef __AVR__
       //value_wr = pgm_read_byte_far(&regParamData[i+j]);
-      value_wr = pgm_read_byte_near(&ParamData[i+j]);
+      value_wr = pgm_read_byte_near(&regParamData[i+j]);
       #else
-      value_wr = ParamData[i+j];
+      value_wr = regParamData[i+j];
       #endif
       value_r = buff_r[j];
       if(value_wr != value_r)
@@ -382,7 +362,7 @@ void check_param(void)
     Serial.print(F("Written = "));
     for(j=0;j<4;j++)
     {
-      value_wr = pgm_read_byte_near(&ParamData[i+j]);
+      value_wr = pgm_read_byte_near(&regParamData[i+j]);
       Serial.print(F("0x"));
       if((value_wr&0xF0)==0x00)
         Serial.print(F("0"));
