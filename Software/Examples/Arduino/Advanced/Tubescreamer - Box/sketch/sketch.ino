@@ -202,7 +202,7 @@ void setup()
   param4_value = processencoder(MASTER_VOLUME_MIN, MASTER_VOLUME_MAX, param4_pulses); // Master Volume
   
   // Pre Gain
-  gainCell(DEVICE_ADDR_7bit, PreGainAddr, 1.00);
+  gainCell(DEVICE_ADDR_7bit, PreGainAddr, 2.264);
   delayMicroseconds(100);
   
   // Opamp Highpass Filter
@@ -344,7 +344,7 @@ void loop()
   if(push_e_function==1)
   {
     func_counter++;
-    if(func_counter==15)
+    if(func_counter==4)
       func_counter=0;
   }
   else if(push_e_function==2)
@@ -411,11 +411,11 @@ void loop()
     // Using PUSH_1 and LED_1
     setBypass(bypass); // Using PUSH_2 and LED_2
     
-    readBack(DEVICE_ADDR_7bit, ReadBackAlg1Addr, 0x00D6, &readback1); // raw abs value
+    /*readBack(DEVICE_ADDR_7bit, ReadBackAlg1Addr, 0x00D6, &readback1); // raw abs value
     if(readback1 > maxreadback1)
       maxreadback1 = readback1;
     Serial.print(F(" Raw abs : ")); // Print linear values (max +/-1.00) for readback values
-    Serial.println(maxreadback1, 3);
+    Serial.println(maxreadback1, 3);*/
     
     if(old_func_counter != func_counter)
     {
@@ -549,24 +549,24 @@ void print_menu_lcd(void)
     switch(func_counter)
     {
       case 0:
-        lcd.print(F("Drive: "));
+        lcd.print(F("Drive:"));
         lcd.print(param1_value, 1);
-        lcd.print(F(" %"));
+        lcd.print(F("%"));
         break;
       case 1:
-        lcd.print(F("Tone: "));
+        lcd.print(F("Tone:"));
         lcd.print(param2_value, 2);
-        lcd.print(F(" Hz"));
+        lcd.print(F("Hz"));
         break;
       case 2:
-        lcd.print(F("Mix: "));
+        lcd.print(F("Mix:"));
         lcd.print(param3_value, 1);
-        lcd.print(F(" %"));
+        lcd.print(F("%"));
         break;
       case 3:
-        lcd.print(F("Mst Vol: "));
+        lcd.print(F("Vol:"));
         lcd.print(param4_value, 2);
-        lcd.print(F(" dB"));
+        lcd.print(F("dB"));
         break;
     }
   }
