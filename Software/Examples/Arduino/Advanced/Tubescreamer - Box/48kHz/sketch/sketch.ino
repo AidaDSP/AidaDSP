@@ -94,6 +94,7 @@ int32_t param1_pulses = 0; // Drive
 int32_t param2_pulses = 0; // Tone
 int32_t param3_pulses = 48; // Mix -> 50%
 int32_t param4_pulses = 0; // Master Volume -> 0dB
+int32_t param5_pulses = 0; // Technology -> Si
 
 uint8_t restore = 1;  // If 1 startup values are written to DSP
 
@@ -101,6 +102,7 @@ float param1_value = 0.00;
 float param2_value = 0.00; 
 float param3_value = 0.00; 
 float param4_value = 0.00; 
+uint8_t param5_value = 0;
 
 equalizer_t tone_eq;
 equalizer_t opamp_eq;
@@ -200,6 +202,7 @@ void setup()
   param2_value = processencoder(TONE_MIN, TONE_MAX, param2_pulses); // Tone
   param3_value = processencoder(MIX_MIN, MIX_MAX, param3_pulses); // Mix
   param4_value = processencoder(MASTER_VOLUME_MIN, MASTER_VOLUME_MAX, param4_pulses); // Master Volume
+  param5_value = selectorwithencoder(param5_pulses, 1); // Technology
   
   // Pre Gain
   gainCell(DEVICE_ADDR_7bit, PreGainAddr, 2.264);
@@ -232,6 +235,8 @@ void setup()
   
   hard_clip(DEVICE_ADDR_7bit, PostGainLimitAddr, 1.0, -1.0);
   delayMicroseconds(100);
+  
+  muxnoiseless(DEVICE_ADDR_7bit, TechnologyAddr, param5_value); // Technology
   
   // Post-distortion lowpass filter
   postdist_eq.gain = 0.0; 
@@ -344,7 +349,7 @@ void loop()
   if(push_e_function==1)
   {
     func_counter++;
-    if(func_counter==4)
+    if(func_counter==5)
       func_counter=0;
   }
   else if(push_e_function==2)
@@ -465,6 +470,16 @@ void loop()
       param4_value = processencoder(MASTER_VOLUME_MIN, MASTER_VOLUME_MAX, param4_pulses);
       MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, param4_value/20.0)); // Set Master Volume 
       break;
+    case 4: // Technology
+      if(restore)
+      {
+        restore = 0;
+        setPulses(param5_pulses);
+      }
+      param5_pulses = getPulses();
+      param5_value = selectorwithencoder(param5_pulses, 1); // Technology
+      muxnoiseless(DEVICE_ADDR_7bit, TechnologyAddr, param5_value); 
+      break;
     } // End switch func_counter
 
     // Display information for user
@@ -530,6 +545,13 @@ void print_menu_putty(void)
   Serial.print(F("Vol: "));
   Serial.print(param4_value, 1);
   Serial.println(F(" dB"));
+  if(func_counter==4)
+    Serial.print(F("    "));
+  Serial.print(F("Diode: "));
+  if(param5_value==0)
+    Serial.println(F("Si"));
+  else
+    Serial.println(F("Ge"));
   
   Serial.write('\n');
   Serial.print(F("Active item: "));
@@ -567,6 +589,13 @@ void print_menu_lcd(void)
         lcd.print(F("Vol:"));
         lcd.print(param4_value, 2);
         lcd.print(F("dB"));
+        break;
+      case 4:
+        lcd.print(F("Diode:"));
+        if(param5_value==0)
+          lcd.print(F("Si"));
+        else
+          lcd.print(F("Ge"));
         break;
     }
   }
