@@ -1,7 +1,8 @@
 /*
  AIDA Tubescreamer Sketch
  	
- This sketch is a "Tubescreamer" as described in...
+ This sketch is a "Tubescreamer" as described by David Yeh in his PhD Thesis. 
+ See Doc inside this folder, along with Matlab script which calculates LUT for non-linear stage. 
 
  This sketch was written for the Arduino, and will not work on other boards.
  	

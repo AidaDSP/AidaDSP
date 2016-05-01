@@ -46,8 +46,13 @@ for i = 1 : N1
     end
     grid on;
     
-    Is = 10 * 1e-12;
-    mUt = 30 * 1e-3;
+    % DIODE TECHNOLOGY PARAMETERS
+    %Is = 10 * 1e-12; % Si
+    %mUt = 30 * 1e-3; % Si
+    Is = 10 * 1e-9; % Ge
+    mUt = 30 * 1e-3; % Ge
+    % ------------------------- %
+    
     D=sym('D');
     X=sym('X');
     
@@ -55,7 +60,7 @@ for i = 1 : N1
     f = (X/(R2*Cc)) - (D/(R2*Cc)) - (Is/Cc) * (exp(D/mUt) - exp(-D/mUt)); % Why is lecit to substitute R1 for R2??? O_o
     fname1 = inline(char(f));
     
-    vect1 = linspace(-1.0, 1.0, N2); % Evaluating non linear function for X -1:1 
+    vect1 = linspace(-2.0, 2.0, N2); % Evaluating non linear function for X -1:1 
     for j = 1:N2
        %func = feval(fname1, D, vect1(j)*2.83); % Obtain an expression with only Y choosing X and X2
        func = feval(fname1, D, vect1(j)); % Obtain an expression with only Y choosing X and X2
