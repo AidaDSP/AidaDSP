@@ -15,15 +15,6 @@
  PC:
  * Please connect with PuTTY on Stellaris USB Serial with a PC for a minimal user interface
  
- NOTE:
- Attenuation Out/In = 2.264, to have out = in you must provide 7.097dB of gain through DSP algorithm
- or externally with active LPF filter.
- Sigma Studio seems to send 0xFF on 0x09 address of params. This is the -1 on a triangular lookup table. 
- But then it's readed 0x0F, because 4 msb(its) are don't care in 5.23 fixed point format.
- improve output TONE circuit
- substitute input Gain + filter cell with Bob and find a solution to avoid clipping everywhere but
- in the LUT. 
-  
  created February 2016
  by Massimo Pennazio
  
