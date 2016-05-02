@@ -20,6 +20,10 @@
  PC:
  * Please connect with PuTTY on Stellaris USB Serial with a PC for a minimal user interface
  
+ NOTE:
+ - Despite I prefer to visualize Hz, dB etc. many commercial pedals show only 0-100% settings. This
+ is the reason why you'll find paramN_fake
+ 
  created February 2016
  by Massimo Pennazio
  
@@ -103,7 +107,6 @@ float param2_fake = 0.00;
 float param3_value = 0.00; 
 float param4_value = 0.00; 
 float param4_fake = 0.00;
-float param
 uint8_t param5_value = 0;
 
 equalizer_t tone_eq;
@@ -558,8 +561,10 @@ void print_menu_putty(void)
   if(func_counter==1)
     Serial.print(F("    "));
   Serial.print(F("Tone: "));
-  Serial.print(param2_value, 2);
-  Serial.println(F(" Hz"));
+  Serial.print(param2_fake, 1);
+  Serial.println(F(" %"));
+  /*Serial.print(param2_value, 2);
+  Serial.println(F(" Hz"));*/
   if(func_counter==2)
     Serial.print(F("    "));
   Serial.print(F("Mix: "));
@@ -568,8 +573,10 @@ void print_menu_putty(void)
   if(func_counter==3)
     Serial.print(F("    "));
   Serial.print(F("Vol: "));
-  Serial.print(param4_value, 1);
-  Serial.println(F(" dB"));
+  Serial.print(param4_fake, 1);
+  Serial.println(F(" %"));
+  /*Serial.print(param4_value, 1);
+  Serial.println(F(" dB"));*/
   if(func_counter==4)
     Serial.print(F("    "));
   Serial.print(F("Diode: "));
@@ -602,8 +609,10 @@ void print_menu_lcd(void)
         break;
       case 1:
         lcd.print(F("Tone:"));
-        lcd.print(param2_value, 2);
-        lcd.print(F("Hz"));
+        lcd.print(param2_fake, 1);
+        lcd.print(F("%"));
+        /*lcd.print(param2_value, 2);
+        lcd.print(F("Hz"));*/
         break;
       case 2:
         lcd.print(F("Mix:"));
@@ -612,8 +621,10 @@ void print_menu_lcd(void)
         break;
       case 3:
         lcd.print(F("Vol:"));
-        lcd.print(param4_value, 2);
-        lcd.print(F("dB"));
+        lcd.print(param4_fake, 1);
+        lcd.print(F("%"));
+        /*lcd.print(param4_value, 2);
+        lcd.print(F("dB"));*/
         break;
       case 4:
         lcd.print(F("Diode:"));

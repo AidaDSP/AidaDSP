@@ -1,7 +1,13 @@
 /*
  AIDA Tubescreamer Sketch
  	
- This sketch is a "Tubescreamer" as described in...
+ This sketch is a "Tubescreamer" inspired the work of David Yeh in his PhD Thesis. All the rights
+ about the mathematical analysis and theory go to David, which I sincerely thank for publishing
+ such an amazing work. Well, physical simulation is the job of taking a well sounding circuit
+ and approximate it in digital domain. It's amazing how much I've learned from this project,
+ both in skills and musical taste. Since the original tubescreamer had silicon diodes (Si), I've included a 
+ germanium diode (Ge) mathematical model also, to increase tone versatility. 
+ See Doc inside this folder, along with Matlab script which calculates LUT for non-linear stage. 
 
  This sketch was written for the Arduino, and will not work on other boards.
  	
@@ -15,14 +21,9 @@
  * Please connect with PuTTY on Stellaris USB Serial with a PC for a minimal user interface
  
  NOTE:
- Attenuation Out/In = 2.264, to have out = in you must provide 7.097dB of gain through DSP algorithm
- or externally with active LPF filter.
- Sigma Studio seems to send 0xFF on 0x09 address of params. This is the -1 on a triangular lookup table. 
- But then it's readed 0x0F, because 4 msb(its) are don't care in 5.23 fixed point format.
- improve output TONE circuit
- substitute input Gain + filter cell with Bob and find a solution to avoid clipping everywhere but
- in the LUT. 
-  
+ - Despite I prefer to visualize Hz, dB etc. many commercial pedals show only 0-100% settings. This
+ is the reason why you'll find paramN_fake
+ 
  created February 2016
  by Massimo Pennazio
  
@@ -48,7 +49,7 @@
 #define MIX_MAX 100.0f
 
 // Master Volume
-#define MASTER_VOLUME_MAX 6.00
+#define MASTER_VOLUME_MAX 0.00
 #define MASTER_VOLUME_MIN -80.00
 
 #define POT_THR  4 // Threshold for filtering noise on pots (adcs)
@@ -66,6 +67,8 @@
 #define LED_2    25
 #define PUSH_1   18
 #define PUSH_2   19
+
+#define STOMPBOX // Comment to use on Aida DSP "La Prima"
 
 // FUNCTION PROTOTYPES
 void spettacolino();
@@ -93,15 +96,17 @@ uint32_t timec=0, prevtimec=0;
 int32_t param1_pulses = 0; // Drive
 int32_t param2_pulses = 0; // Tone
 int32_t param3_pulses = 48; // Mix -> 50%
-int32_t param4_pulses = 0; // Master Volume -> 0dB
+int32_t param4_pulses = -8; // Master Volume -> -6dB
 int32_t param5_pulses = 0; // Technology -> Si
 
 uint8_t restore = 1;  // If 1 startup values are written to DSP
 
 float param1_value = 0.00; 
 float param2_value = 0.00; 
+float param2_fake = 0.00;
 float param3_value = 0.00; 
 float param4_value = 0.00; 
+float param4_fake = 0.00;
 uint8_t param5_value = 0;
 
 equalizer_t tone_eq;
@@ -158,6 +163,7 @@ void setup()
   // put your setup code here, to run once:
   // I/O
   pinMode(PIN_LED, OUTPUT);
+  #ifdef STOMPBOX
   pinMode(LED_1, OUTPUT);
   digitalWrite(LED_1, HIGH);
   pinMode(LED_2, OUTPUT);
@@ -166,6 +172,7 @@ void setup()
   //attachInterrupt(5, push1_isr, FALLING); 
   pinMode(PUSH_2, INPUT_PULLUP);
   //attachInterrupt(4, push2_isr, FALLING); 
+  #endif
 
   // open the USBSerial port
   Serial.begin(115200);
@@ -175,11 +182,13 @@ void setup()
   Serial.println((DEVICE_ADDR_7bit<<1)&~0x01, HEX);
   
   // LCD Display
+  #ifdef STOMPBOX
   lcd.begin(16, 2); // set up the LCD's number of columns and rows
   lcd.setCursor(0, 0);
   lcd.print(F("Aida DSP Box")); // Print a message to the LCD.
   lcd.setCursor(0, 1);
   lcd.print(F("Tubescr. V0.1"));
+  #endif
 
   // DSP board
   InitAida();	// Initialize DSP board
@@ -276,6 +285,7 @@ void loop()
 {
   // put your main code here, to run repeatedly:
 
+  #ifdef STOMBOX
   adcvalue1 = analogRead(POT1);
   sum1 = ((((64)-1) * sum1)+((uint32_t)adcvalue1*(64)))/(64);
   out1 = sum1/64;
@@ -296,6 +306,7 @@ void loop()
   {
     func_counter=1;
     param2_value = processpot(TONE_MIN, TONE_MAX, pot2); // Tone
+    param2_fake = processpot(0.0, 100.0, pot2); // Only for vizualization
     tone_eq.f0 = param2_value;
     EQ1stOrd(DEVICE_ADDR_7bit, ToneAddr, &tone_eq);
     oldpot2 = pot2;
@@ -307,9 +318,10 @@ void loop()
   pot3 = out3;
   if(!isinrange(pot3, oldpot3, POT_THR))
   {
-    //func_counter=2;
-    //param3_value = processpot(MIX_MIN, MIX_MAX, pot3); // Mix
-    //setMix(param3_value);
+    func_counter=3;
+    param4_value = processpot(MASTER_VOLUME_MIN, MASTER_VOLUME_MAX, pot3); // Master Volume
+    param4_fake = processpot(0.0, 100.0, pot3); // Only for visualization
+    MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, param4_value/20.0)); // Set Master Volume
     oldpot3 = pot3;
   }
   
@@ -319,11 +331,12 @@ void loop()
   pot4 = out4;
   if(!isinrange(pot4, oldpot4, POT_THR))
   {
-    //func_counter=3;
-    //param4_value = processpot(MASTER_VOLUME_MIN, MASTER_VOLUME_MAX, pot4); // Master Volume
-    //MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, param4_value/20.0)); // Set Master Volume 
+    //func_counter=2;
+    //param3_value = processpot(MIX_MIN, MIX_MAX, pot4); // Mix
+    //setMix(param3_value);
     oldpot4 = pot4;
   }
+  #endif
 
   if(digitalRead(ENC_PUSH)==LOW)  
   {
@@ -354,7 +367,9 @@ void loop()
   }
   else if(push_e_function==2)
   {
-    // Not managed yet
+    #ifndef STOMPBOX
+    bypass ^= 1; // Use 2nd function as bypass switch in normal mode
+    #endif
   }
   
   if(digitalRead(PUSH_1)==LOW)
@@ -406,12 +421,14 @@ void loop()
     Serial.println(getPulses(), DEC);
     Serial.write('\n');
     
+    #ifdef STOMPBOX
     reinitdisplaycounter++;
     if(reinitdisplaycounter==4) // Sometimes display takes noise and corrupts its RAM...
     {
       lcd.begin(16, 2); // set up the LCD's number of columns and rows
       reinitdisplaycounter = 0;
     }
+    #endif
     
     // Using PUSH_1 and LED_1
     setBypass(bypass); // Using PUSH_2 and LED_2
@@ -430,25 +447,30 @@ void loop()
     switch(func_counter)
     {
     case 0: // Drive
-      /*if(restore)
+      #ifndef STOMPBOX
+      if(restore)
       {
         restore = 0;
         setPulses(param1_pulses);
       }
       param1_pulses = getPulses();
       param1_value = processencoder(DRIVE_MIN, DRIVE_MAX, param1_pulses);
-      setDrive(param1_value);*/
+      setDrive(param1_value);
+      #endif
       break;
     case 1: // Tone
-      /*if(restore)
+      #ifndef STOMPBOX
+      if(restore)
       {
         restore = 0;
         setPulses(param2_pulses);
       }
       param2_pulses = getPulses();
       param2_value = processencoder(TONE_MIN, TONE_MAX, param2_pulses);
+      param2_fake = processencoder(0.0, 100.0, param2_pulses);
       tone_eq.f0 = param2_value;
-      EQ1stOrd(DEVICE_ADDR_7bit, ToneAddr, &tone_eq);*/
+      EQ1stOrd(DEVICE_ADDR_7bit, ToneAddr, &tone_eq);
+      #endif
       break;
     case 2: // Mix
       if(restore)
@@ -461,6 +483,7 @@ void loop()
       setMix(param3_value);
       break;
     case 3: // Master Volume
+      #ifndef STOMPBOX
       if(restore)
       {
         restore = 0;
@@ -468,7 +491,9 @@ void loop()
       }
       param4_pulses = getPulses();
       param4_value = processencoder(MASTER_VOLUME_MIN, MASTER_VOLUME_MAX, param4_pulses);
+      param4_fake = processencoder(0.0, 100.0, param4_pulses);
       MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, param4_value/20.0)); // Set Master Volume 
+      #endif
       break;
     case 4: // Technology
       if(restore)
@@ -483,8 +508,11 @@ void loop()
     } // End switch func_counter
 
     // Display information for user
-    //print_menu_putty();
+    #ifndef STOMPBOX
+    print_menu_putty();
+    #else
     print_menu_lcd();
+    #endif
 
     prevtimec = timec;
   } // End if 1000ms tick
@@ -533,8 +561,10 @@ void print_menu_putty(void)
   if(func_counter==1)
     Serial.print(F("    "));
   Serial.print(F("Tone: "));
-  Serial.print(param2_value, 2);
-  Serial.println(F(" Hz"));
+  Serial.print(param2_fake, 1);
+  Serial.println(F(" %"));
+  /*Serial.print(param2_value, 2);
+  Serial.println(F(" Hz"));*/
   if(func_counter==2)
     Serial.print(F("    "));
   Serial.print(F("Mix: "));
@@ -543,14 +573,16 @@ void print_menu_putty(void)
   if(func_counter==3)
     Serial.print(F("    "));
   Serial.print(F("Vol: "));
-  Serial.print(param4_value, 1);
-  Serial.println(F(" dB"));
+  Serial.print(param4_fake, 1);
+  Serial.println(F(" %"));
+  /*Serial.print(param4_value, 1);
+  Serial.println(F(" dB"));*/
   if(func_counter==4)
     Serial.print(F("    "));
   Serial.print(F("Diode: "));
-  if(param5_value==0)
+  if(param5_value==1)
     Serial.println(F("Si"));
-  else
+  else if(param5_value==2)
     Serial.println(F("Ge"));
   
   Serial.write('\n');
@@ -577,8 +609,10 @@ void print_menu_lcd(void)
         break;
       case 1:
         lcd.print(F("Tone:"));
-        lcd.print(param2_value, 2);
-        lcd.print(F("Hz"));
+        lcd.print(param2_fake, 1);
+        lcd.print(F("%"));
+        /*lcd.print(param2_value, 2);
+        lcd.print(F("Hz"));*/
         break;
       case 2:
         lcd.print(F("Mix:"));
@@ -587,14 +621,16 @@ void print_menu_lcd(void)
         break;
       case 3:
         lcd.print(F("Vol:"));
-        lcd.print(param4_value, 2);
-        lcd.print(F("dB"));
+        lcd.print(param4_fake, 1);
+        lcd.print(F("%"));
+        /*lcd.print(param4_value, 2);
+        lcd.print(F("dB"));*/
         break;
       case 4:
         lcd.print(F("Diode:"));
-        if(param5_value==0)
+        if(param5_value==1)
           lcd.print(F("Si"));
-        else
+        else if(param5_value==2)
           lcd.print(F("Ge"));
         break;
     }
