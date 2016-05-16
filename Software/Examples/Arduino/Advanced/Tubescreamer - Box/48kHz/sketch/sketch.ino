@@ -214,7 +214,7 @@ void setup()
   param5_value = selectorwithencoder(param5_pulses, 1); // Technology
   
   // Pre Gain
-  gainCell(DEVICE_ADDR_7bit, PreGainAddr, 2.264);
+  gainCell(DEVICE_ADDR_7bit, PreGainAddr, 2.83);
   delayMicroseconds(100);
   
   // Opamp Highpass Filter

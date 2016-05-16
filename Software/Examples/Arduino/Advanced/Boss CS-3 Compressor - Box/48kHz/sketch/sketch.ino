@@ -39,7 +39,7 @@
 #define PREGAIN_MIN 0.0f // dB
 #define THR_MAX 6.0f // dB
 #define THR_MIN -96.0f // dB
-#define RATIO_MAX 100.0f
+#define RATIO_MAX 16.0f
 #define RATIO_MIN 1.0f
 #define ATTACK_MAX 500.0f // ms
 #define ATTACK_MIN 1.0f // ms
@@ -97,15 +97,15 @@ uint32_t timec=0, prevtimec=0;
 // Values in param pulses are startup values for
 // DSP Blocks
 int32_t param1_pulses = 0; // Pre Gain
-int32_t param2_pulses = 0; // Threshold
-int32_t param3_pulses = 0; // Ratio
-int32_t param4_pulses = 0; // Attack
-int32_t param5_pulses = 0; // Hold
-int32_t param6_pulses = 0; // Decay
+int32_t param2_pulses = -30; // Threshold
+int32_t param3_pulses = 19; // Ratio
+int32_t param4_pulses = 10; // Attack
+int32_t param5_pulses = 10; // Hold
+int32_t param6_pulses = 24; // Decay
 int32_t param7_pulses = 0; // Bright
 int32_t param8_pulses = 0; // PrePost Bright
 int32_t param9_pulses = 0; // Master Volume
-int32_t param10_pulses = 0; // Post Gain
+int32_t param10_pulses = 24; // Post Gain
 
 uint8_t restore = 1;  // If 1 startup values are written to DSP
 
@@ -195,7 +195,7 @@ void setup()
   lcd.setCursor(0, 0);
   lcd.print(F("Aida DSP Box")); // Print a message to the LCD.
   lcd.setCursor(0, 1);
-  lcd.print(F("Tubescr. V0.1"));
+  lcd.print(F("Compressor V0.1"));
   #endif
 
   // DSP board
@@ -226,14 +226,19 @@ void setup()
   param9_value = processencoder(MASTER_VOLUME_MIN, MASTER_VOLUME_MAX, param9_pulses); // Master Volume
   param10_value = processencoder(POSTGAIN_MIN, POSTGAIN_MAX, param10_pulses); // Post Gain
   
+  // KGain
+  gainCell(DEVICE_ADDR_7bit, KGainAddr, 2.83);
+  delayMicroseconds(100);
+  
   // Pre Gain
-  gainCell(DEVICE_ADDR_7bit, PreGainAddr, param1_value);
+  gainCell(DEVICE_ADDR_7bit, PreGainAddr, pow(10, param1_value/20.0));
   delayMicroseconds(100);
   
   // Bright Filter Pre & Post
   bright_eq.S = 1.0;
   bright_eq.gain = 0.0; 
-  bright_eq.f0 = 2000.0;
+  //bright_eq.f0 = 2000.0; // Guitar
+  bright_eq.f0 = 700.0; // Bass
   bright_eq.boost = param7_value;
   bright_eq.type = HighShelf;
   bright_eq.phase = false;
@@ -463,7 +468,7 @@ void loop()
       }
       param1_pulses = getPulses();
       param1_value = processencoder(PREGAIN_MIN, PREGAIN_MAX, param1_pulses); // Pre Gain
-      gainCell(DEVICE_ADDR_7bit, PreGainAddr, param1_value);
+      gainCell(DEVICE_ADDR_7bit, PreGainAddr, pow(10, param1_value/20.0));
       break;
     case 1: // Threshold
       if(restore)
@@ -566,8 +571,9 @@ void loop()
 
     // Display information for user
     #ifndef STOMPBOX
-    print_menu_putty();
+    //print_menu_putty();
     #else
+    print_menu_putty();
     print_menu_lcd();
     #endif
 

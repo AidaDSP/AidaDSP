@@ -214,7 +214,7 @@ void setup()
   param5_value = selectorwithencoder(param5_pulses, 1); // Technology
   
   // Pre Gain
-  gainCell(DEVICE_ADDR_7bit, PreGainAddr, 2.264);
+  gainCell(DEVICE_ADDR_7bit, PreGainAddr, 2.83);
   delayMicroseconds(100);
   
   // Opamp Highpass Filter
@@ -285,7 +285,7 @@ void loop()
 {
   // put your main code here, to run repeatedly:
 
-  #ifdef STOMBOX
+  #ifdef STOMPBOX
   adcvalue1 = analogRead(POT1);
   sum1 = ((((64)-1) * sum1)+((uint32_t)adcvalue1*(64)))/(64);
   out1 = sum1/64;
