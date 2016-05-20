@@ -2,7 +2,7 @@
   AidaDSP.h - Aida DSP library
  Copyright (c) 2015 Massimo Pennazio.  All right reserved.
  
- Version: 0.17 ADAU170x (Arduino)
+ Version: 0.18 ADAU170x (Arduino)
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -87,7 +87,7 @@ inline int32_t FIXED_Mul(int32_t a, int32_t b)  // This function has to be decla
  *          DSP DEFINES (do not edit)           *
  ************************************************/
 #define pi 3.1415926f
-#define FS 48000.00f
+#define FS 96000.00f
 
 // 2nd order equalizer defines
 #define Peaking         0
@@ -108,12 +108,12 @@ inline int32_t FIXED_Mul(int32_t a, int32_t b)  // This function has to be decla
  ************************************************/
 #define COMPRESSORWITHPOSTGAIN
 typedef struct compressor_t{
-  float threshold;  // Range -90/+6 [dB]
-  float ratio;      // Range 1 - 100
-  float attack;     // [dB/s]
-  float hold;       // [ms]
-  float decay;      // [dB/s]
-  float postgain;   // Range -30/+24 [dB] 
+  float threshold;  // -90/+6 [dB]
+  float ratio;      // 1 - 100
+  float attack;     // 1 - 500 [ms]
+  float hold;       // 1 - attack [ms]
+  float decay;      // 2000 [ms]
+  float postgain;   // -30/+24 [dB] 
 }compressor;
 
 typedef struct equalizer_t{
@@ -168,6 +168,7 @@ void StateVariable(uint8_t dspAddress, uint16_t address, float frequency, float 
 void CompressorRMS(uint8_t dspAddress, uint16_t address, compressor_t* compressor);
 void CompressorPeak(uint8_t dspAddress, uint16_t address, compressor_t* compressor);   
 void readBack(uint8_t dspAddress, uint16_t address, uint16_t capturecount, float *value);
+void readBack2(uint8_t dspAddress, uint16_t address, float *value);
 void mux(uint8_t dspAddress, uint16_t address, uint8_t select, uint8_t nchannels);
 void muxnoiseless(uint8_t dspAddress, uint16_t address, uint8_t select);
 void hard_clip(uint8_t dspAddress, uint16_t address, float th_high, float th_low);

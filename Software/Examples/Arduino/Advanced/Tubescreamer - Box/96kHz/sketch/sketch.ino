@@ -23,6 +23,12 @@
  NOTE:
  - Despite I prefer to visualize Hz, dB etc. many commercial pedals show only 0-100% settings. This
  is the reason why you'll find paramN_fake
+ - Original Tubescreamer had these pot controls
+   . Potentiometer 500K/470K Lin (Drive)
+   . Potentiometer 20K/22K Lin (Tone)
+   . Potentiometer 100K Log (Volume)
+ - V0.2 improved dynamics (LUTs are now calculated for +/-5V input signal) and highpass filter move its frequency accordingly drive setting
+ - V0.1 first version
  
  created February 2016
  by Massimo Pennazio
@@ -43,10 +49,10 @@
 // DEFINES USER INTERFACE
 #define DRIVE_MAX 100.0f
 #define DRIVE_MIN 0.0f
+#define HIGHPASS_MIN 720.0f // Hz
+#define HIGHPASS_MAX 740.0f // Hz
 #define TONE_MAX 4180.0f // Hz
 #define TONE_MIN 792.0f  // Hz
-#define MIX_MIN 0.0f
-#define MIX_MAX 100.0f
 
 // Master Volume
 #define MASTER_VOLUME_MAX 0.00
@@ -69,13 +75,13 @@
 #define PUSH_2   19
 
 #define STOMPBOX // Comment to use on Aida DSP "La Prima"
+//#define READBACK // Comment to do not perform readback of input guitar signal level inside DSP
 
 // FUNCTION PROTOTYPES
 void spettacolino();
 void clearAndHome(void);
 void setBypass(uint8_t);
 void setDrive(float);
-void setMix(float);
 
 void print_menu_putty(void);
 void print_menu_lcd(void);
@@ -95,19 +101,18 @@ uint32_t timec=0, prevtimec=0;
 // DSP Blocks
 int32_t param1_pulses = 0; // Drive
 int32_t param2_pulses = 0; // Tone
-int32_t param3_pulses = 48; // Mix -> 50%
-int32_t param4_pulses = -8; // Master Volume -> -6dB
-int32_t param5_pulses = 0; // Technology -> Si
+int32_t param3_pulses = -8; // Master Volume -> -6dB
+int32_t param4_pulses = 0; // Technology -> Si
 
 uint8_t restore = 1;  // If 1 startup values are written to DSP
 
-float param1_value = 0.00; 
+float param1_value1 = 0.00; 
+float param1_value2 = 0.00;
 float param2_value = 0.00; 
 float param2_fake = 0.00;
 float param3_value = 0.00; 
-float param4_value = 0.00; 
-float param4_fake = 0.00;
-uint8_t param5_value = 0;
+float param3_fake = 0.00;
+uint8_t param4_value = 0;
 
 equalizer_t tone_eq;
 equalizer_t opamp_eq;
@@ -187,7 +192,7 @@ void setup()
   lcd.setCursor(0, 0);
   lcd.print(F("Aida DSP Box")); // Print a message to the LCD.
   lcd.setCursor(0, 1);
-  lcd.print(F("Tubescr. V0.1"));
+  lcd.print(F("Tubescr. V0.2"));
   #endif
 
   // DSP board
@@ -207,11 +212,11 @@ void setup()
   // -- Initialization 
   
   // Param Values
-  param1_value = processencoder(DRIVE_MIN, DRIVE_MAX, param1_pulses); // Drive
+  param1_value1 = processencoder(DRIVE_MIN, DRIVE_MAX, param1_pulses); // Drive
+  param1_value2 = processencoder(HIGHPASS_MIN, HIGHPASS_MAX, param1_pulses); // Moving Frequency High Pass Depending on Drive
   param2_value = processencoder(TONE_MIN, TONE_MAX, param2_pulses); // Tone
-  param3_value = processencoder(MIX_MIN, MIX_MAX, param3_pulses); // Mix
-  param4_value = processencoder(MASTER_VOLUME_MIN, MASTER_VOLUME_MAX, param4_pulses); // Master Volume
-  param5_value = selectorwithencoder(param5_pulses, 1); // Technology
+  param3_value = processencoder(MASTER_VOLUME_MIN, MASTER_VOLUME_MAX, param3_pulses); // Master Volume
+  param4_value = selectorwithencoder(param4_pulses, 1); // Technology
   
   // Pre Gain
   gainCell(DEVICE_ADDR_7bit, PreGainAddr, 2.83);
@@ -219,33 +224,34 @@ void setup()
   
   // Opamp Highpass Filter
   opamp_eq.gain = 1.0; 
-  opamp_eq.f0 = 153.9;
+  opamp_eq.f0 = param1_value2;
   opamp_eq.type = Highpass;
   opamp_eq.phase = false;
   opamp_eq.onoff = ON;
   EQ1stOrd(DEVICE_ADDR_7bit, OpampAddr, &opamp_eq);
   delayMicroseconds(100);
   
-  hard_clip(DEVICE_ADDR_7bit, PreGainLimitAddr, 1.0, -1.0);
+  hard_clip(DEVICE_ADDR_7bit, PreGainLimitAddr, 5.0, -5.0);
   delayMicroseconds(100);
   
   // Drive
-  setDrive(param1_value);
+  setDrive(param1_value1);
   delayMicroseconds(100);
   
   // Anti-aliasing filter (lowpass before distortion)
   antialias_eq.gain = 0.0; 
-  antialias_eq.f0 = 6000.0;
+  antialias_eq.f0 = 6000; // 8x oversampling @ 96k
+  //antialias_eq.f0 = 12000.0; // 4x oversampling @ 96k
   antialias_eq.type = Lowpass;
   antialias_eq.phase = false;
   antialias_eq.onoff = ON;
   EQ1stOrd(DEVICE_ADDR_7bit, AntiAliasingFAddr, &antialias_eq);
   delayMicroseconds(100);
   
-  hard_clip(DEVICE_ADDR_7bit, PostGainLimitAddr, 1.0, -1.0);
+  hard_clip(DEVICE_ADDR_7bit, PostGainLimitAddr, 5.0, -5.0);
   delayMicroseconds(100);
   
-  muxnoiseless(DEVICE_ADDR_7bit, TechnologyAddr, param5_value); // Technology
+  muxnoiseless(DEVICE_ADDR_7bit, TechnologyAddr, param4_value); // Technology
   
   // Post-distortion lowpass filter
   postdist_eq.gain = 0.0; 
@@ -265,12 +271,8 @@ void setup()
   EQ1stOrd(DEVICE_ADDR_7bit, ToneAddr, &tone_eq);
   delayMicroseconds(100);
   
-  // Mix
-  setMix(param3_value);
-  delayMicroseconds(100);
-  
   // Master Volume
-  MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, param4_value/20.0)); // Set Master Volume 
+  MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, param3_value/20.0)); // Set Master Volume 
   delayMicroseconds(100); 
    
   MuteOff();  // Mute DAC Off
@@ -293,8 +295,12 @@ void loop()
   if(!isinrange(pot1, oldpot1, POT_THR))
   {
     func_counter=0;
-    param1_value = processpot(DRIVE_MIN, DRIVE_MAX, pot1); // Drive
-    setDrive(param1_value);
+    param1_value1 = processpot(DRIVE_MIN, DRIVE_MAX, pot1); // Drive
+    setDrive(param1_value1);
+    delayMicroseconds(25);
+    param1_value2 = processpot(HIGHPASS_MIN, HIGHPASS_MAX, pot1); // Moving Frequency High Pass Depending on Drive
+    opamp_eq.f0 = param1_value2;
+    EQ1stOrd(DEVICE_ADDR_7bit, OpampAddr, &opamp_eq);
     oldpot1 = pot1;
   }
   
@@ -318,10 +324,10 @@ void loop()
   pot3 = out3;
   if(!isinrange(pot3, oldpot3, POT_THR))
   {
-    func_counter=3;
-    param4_value = processpot(MASTER_VOLUME_MIN, MASTER_VOLUME_MAX, pot3); // Master Volume
-    param4_fake = processpot(0.0, 100.0, pot3); // Only for visualization
-    MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, param4_value/20.0)); // Set Master Volume
+    func_counter=2;
+    param3_value = processpot(MASTER_VOLUME_MIN, MASTER_VOLUME_MAX, pot3); // Master Volume
+    param3_fake = processpot(0.0, 100.0, pot3); // Only for visualization
+    MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, param3_value/20.0)); // Set Master Volume
     oldpot3 = pot3;
   }
   
@@ -331,9 +337,8 @@ void loop()
   pot4 = out4;
   if(!isinrange(pot4, oldpot4, POT_THR))
   {
-    //func_counter=2;
-    //param3_value = processpot(MIX_MIN, MIX_MAX, pot4); // Mix
-    //setMix(param3_value);
+    //func_counter=;
+    
     oldpot4 = pot4;
   }
   #endif
@@ -362,7 +367,7 @@ void loop()
   if(push_e_function==1)
   {
     func_counter++;
-    if(func_counter==5)
+    if(func_counter==4)
       func_counter=0;
   }
   else if(push_e_function==2)
@@ -414,7 +419,7 @@ void loop()
     clearAndHome();    // !!!Warning use with real terminal emulation program
     Serial.println(F("********************************"));
     Serial.println(F("*   User control interface     *"));
-    Serial.println(F("*   AIDA Tubescreamer Sketch   *"));
+    Serial.println(F("*   AIDA Tubescreamer 96k      *"));
     Serial.println(F("********************************"));
     Serial.write('\n');
     Serial.print(F("Encoder pulses: "));
@@ -433,11 +438,13 @@ void loop()
     // Using PUSH_1 and LED_1
     setBypass(bypass); // Using PUSH_2 and LED_2
     
-    /*readBack(DEVICE_ADDR_7bit, ReadBackAlg1Addr, 0x00D6, &readback1); // raw abs value
+    #ifdef READBACK
+    readBack(DEVICE_ADDR_7bit, ReadBackAlg1Addr, 0x011E, &readback1); // raw abs value
     if(readback1 > maxreadback1)
       maxreadback1 = readback1;
     Serial.print(F(" Raw abs : ")); // Print linear values (max +/-1.00) for readback values
-    Serial.println(maxreadback1, 3);*/
+    Serial.println(maxreadback1, 3);
+    #endif
     
     if(old_func_counter != func_counter)
     {
@@ -454,8 +461,12 @@ void loop()
         setPulses(param1_pulses);
       }
       param1_pulses = getPulses();
-      param1_value = processencoder(DRIVE_MIN, DRIVE_MAX, param1_pulses);
-      setDrive(param1_value);
+      param1_value1 = processencoder(DRIVE_MIN, DRIVE_MAX, param1_pulses);
+      setDrive(param1_value1);
+      delayMicroseconds(25);
+      param1_value2 = processencoder(HIGHPASS_MIN, HIGHPASS_MAX, param1_pulses); // Moving Frequency High Pass Depending on Drive
+      opamp_eq.f0 = param1_value2;
+      EQ1stOrd(DEVICE_ADDR_7bit, OpampAddr, &opamp_eq);
       #endif
       break;
     case 1: // Tone
@@ -472,38 +483,28 @@ void loop()
       EQ1stOrd(DEVICE_ADDR_7bit, ToneAddr, &tone_eq);
       #endif
       break;
-    case 2: // Mix
+    case 2: // Master Volume
+      #ifndef STOMPBOX
       if(restore)
       {
         restore = 0;
         setPulses(param3_pulses);
       }
       param3_pulses = getPulses();
-      param3_value = processencoder(MIX_MIN, MIX_MAX, param3_pulses);
-      setMix(param3_value);
+      param3_value = processencoder(MASTER_VOLUME_MIN, MASTER_VOLUME_MAX, param3_pulses);
+      param3_fake = processencoder(0.0, 100.0, param3_pulses);
+      MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, param3_value/20.0)); // Set Master Volume 
+      #endif
       break;
-    case 3: // Master Volume
-      #ifndef STOMPBOX
+    case 3: // Technology
       if(restore)
       {
         restore = 0;
         setPulses(param4_pulses);
       }
       param4_pulses = getPulses();
-      param4_value = processencoder(MASTER_VOLUME_MIN, MASTER_VOLUME_MAX, param4_pulses);
-      param4_fake = processencoder(0.0, 100.0, param4_pulses);
-      MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, param4_value/20.0)); // Set Master Volume 
-      #endif
-      break;
-    case 4: // Technology
-      if(restore)
-      {
-        restore = 0;
-        setPulses(param5_pulses);
-      }
-      param5_pulses = getPulses();
-      param5_value = selectorwithencoder(param5_pulses, 1); // Technology
-      muxnoiseless(DEVICE_ADDR_7bit, TechnologyAddr, param5_value); 
+      param4_value = selectorwithencoder(param4_pulses, 1); // Technology
+      muxnoiseless(DEVICE_ADDR_7bit, TechnologyAddr, param4_value); 
       break;
     } // End switch func_counter
 
@@ -556,7 +557,7 @@ void print_menu_putty(void)
   if(func_counter==0)
     Serial.print(F("    "));
   Serial.print(F("Drive: "));
-  Serial.print(param1_value, 1);
+  Serial.print(param1_value1, 1);
   Serial.println(F(" %"));
   if(func_counter==1)
     Serial.print(F("    "));
@@ -567,22 +568,17 @@ void print_menu_putty(void)
   Serial.println(F(" Hz"));*/
   if(func_counter==2)
     Serial.print(F("    "));
-  Serial.print(F("Mix: "));
-  Serial.print(param3_value, 1);
+  Serial.print(F("Vol: "));
+  Serial.print(param3_fake, 1);
   Serial.println(F(" %"));
+  /*Serial.print(param3_value, 1);
+  Serial.println(F(" dB"));*/
   if(func_counter==3)
     Serial.print(F("    "));
-  Serial.print(F("Vol: "));
-  Serial.print(param4_fake, 1);
-  Serial.println(F(" %"));
-  /*Serial.print(param4_value, 1);
-  Serial.println(F(" dB"));*/
-  if(func_counter==4)
-    Serial.print(F("    "));
   Serial.print(F("Diode: "));
-  if(param5_value==1)
+  if(param4_value==1)
     Serial.println(F("Si"));
-  else if(param5_value==2)
+  else if(param4_value==2)
     Serial.println(F("Ge"));
   
   Serial.write('\n');
@@ -598,13 +594,13 @@ void print_menu_lcd(void)
     lcd.print(F("BYPASS"));
   else
   {
-    lcd.print(F("Tubescreamer")); 
+    lcd.print(F("Tubescreamer 96k")); 
     lcd.setCursor(0, 1);
     switch(func_counter)
     {
       case 0:
         lcd.print(F("Drive:"));
-        lcd.print(param1_value, 1);
+        lcd.print(param1_value1, 1);
         lcd.print(F("%"));
         break;
       case 1:
@@ -615,22 +611,17 @@ void print_menu_lcd(void)
         lcd.print(F("Hz"));*/
         break;
       case 2:
-        lcd.print(F("Mix:"));
-        lcd.print(param3_value, 1);
-        lcd.print(F("%"));
-        break;
-      case 3:
         lcd.print(F("Vol:"));
-        lcd.print(param4_fake, 1);
+        lcd.print(param3_fake, 1);
         lcd.print(F("%"));
-        /*lcd.print(param4_value, 2);
+        /*lcd.print(param3_value, 2);
         lcd.print(F("dB"));*/
         break;
-      case 4:
+      case 3:
         lcd.print(F("Diode:"));
-        if(param5_value==1)
+        if(param4_value==1)
           lcd.print(F("Si"));
-        else if(param5_value==2)
+        else if(param4_value==2)
           lcd.print(F("Ge"));
         break;
     }
@@ -702,23 +693,6 @@ void setDrive(float value)
     */
     
     oldvalue = value;
-  }
-}
-
-void setMix(float percent)
-{
-  static float oldpercent = 0.00;
-  float value = 0.00;
-  
-  if(oldpercent != percent)
-  {
-    if(percent>100)
-      percent = 100;
-    value = percent/100.00; // Scale to range 0-1 
-  
-    // MIX
-    AIDA_SAFELOAD_WRITE_VALUE(DEVICE_ADDR_7bit, MergeAddr, false, 1.00-value);  // Dry	signal
-    AIDA_SAFELOAD_WRITE_VALUE(DEVICE_ADDR_7bit, MergeAddr+1, true, value);   // Distorted signal (Wet)
   }
 }
 

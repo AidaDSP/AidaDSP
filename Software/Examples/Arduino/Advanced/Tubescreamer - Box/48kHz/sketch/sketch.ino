@@ -226,7 +226,7 @@ void setup()
   EQ1stOrd(DEVICE_ADDR_7bit, OpampAddr, &opamp_eq);
   delayMicroseconds(100);
   
-  hard_clip(DEVICE_ADDR_7bit, PreGainLimitAddr, 1.0, -1.0);
+  hard_clip(DEVICE_ADDR_7bit, PreGainLimitAddr, 8.0, -8.0);
   delayMicroseconds(100);
   
   // Drive
@@ -242,7 +242,7 @@ void setup()
   EQ1stOrd(DEVICE_ADDR_7bit, AntiAliasingFAddr, &antialias_eq);
   delayMicroseconds(100);
   
-  hard_clip(DEVICE_ADDR_7bit, PostGainLimitAddr, 1.0, -1.0);
+  hard_clip(DEVICE_ADDR_7bit, PostGainLimitAddr, 5.0, -5.0);
   delayMicroseconds(100);
   
   muxnoiseless(DEVICE_ADDR_7bit, TechnologyAddr, param5_value); // Technology
@@ -285,7 +285,7 @@ void loop()
 {
   // put your main code here, to run repeatedly:
 
-  #ifdef STOMBOX
+  #ifdef STOMPBOX
   adcvalue1 = analogRead(POT1);
   sum1 = ((((64)-1) * sum1)+((uint32_t)adcvalue1*(64)))/(64);
   out1 = sum1/64;
@@ -598,7 +598,7 @@ void print_menu_lcd(void)
     lcd.print(F("BYPASS"));
   else
   {
-    lcd.print(F("Tubescreamer")); 
+    lcd.print(F("Tubescreamer 48k")); 
     lcd.setCursor(0, 1);
     switch(func_counter)
     {
