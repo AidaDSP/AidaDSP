@@ -2,7 +2,7 @@
   AidaDSP.cpp - Aida DSP library
  Copyright (c) 2015 Massimo Pennazio.  All right reserved.
  
- Version: 0.17 ADAU144x (Energia)
+ Version: 0.18 ADAU144x (Energia)
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -930,7 +930,35 @@ void readBack(uint8_t dspAddress, uint16_t address, uint16_t capturecount, float
 
   word32 = (buf[0]<<24 | buf[1]<<16 | buf[2]<<8)&0xFFFFFF00; // MSB first, convert to 5.27 format
 
-  *value = ((float)word32/(1 << 27)); // I'm converting from 5.27 int32 to maintain sign
+  if(word32==0)
+    word32 = 1;
+    
+  *value = ((float)word32/((uint32_t)1 << 27)); // I'm converting from 5.27 int32 to maintain sign
+}
+
+/**
+ * Warning!!! ADAU144x Only!!!
+ * This function reads value of signal inside DSP chain, useful for monitoring
+ * levels from inside DSP algorithm, uses a readback cell
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param value - the return linear value in floating point of audio level on readback cell. Range: +/-1.0
+ */
+void readBack2(uint8_t dspAddress, uint16_t address, float *value){
+
+  uint8_t buf[4];
+  int32_t word32 = 0;
+
+  memset(buf, 0, 4);
+  
+  AIDA_READ_REGISTER(dspAddress, address, 4, buf);
+  
+  word32 = ((uint32_t)buf[0]<<24 | (uint32_t)buf[1]<<16 | (uint32_t)buf[2]<<8 | (uint32_t)buf[3]); // MSB first, 5.23 
+   
+  if(word32==0)
+    word32 = 1;
+  
+  *value = ((float)word32/((uint32_t)1 << 23)); // Standard fixed point 5.23 conversion
 }
 
 /**

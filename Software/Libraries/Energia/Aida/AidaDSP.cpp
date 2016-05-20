@@ -2,7 +2,7 @@
   AidaDSP.cpp - Aida DSP library
  Copyright (c) 2015 Massimo Pennazio.  All right reserved.
  
- Version: 0.16 ADAU170x (Energia)
+ Version: 0.18 ADAU170x (Energia)
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -716,7 +716,7 @@ void linspace(float x1, float x2, float n, float vect[])
 }
 
  /**
- * This function calculates the curve and the other parameters of a compressor rms block 
+ * This function calculates the curve and the other parameters of a rms compressor block 
  * @param dspAddress - the physical I2C address (7-bit format)
  * @param address - the param address of the cell
  * @param compressor - the struct which contains multiple settings for compressor control (see AidaDSP.h)
@@ -725,7 +725,7 @@ void linspace(float x1, float x2, float n, float vect[])
  *   ratio: compressor's ratio. If ratio = 6, gain = 1/ratio = 1/6 so compression ratio 6:1
  *   attack: range 1-500 [ms] 
  *   hold: range 1-attack [ms]
- *   decay: range 868-2000 [ms]
+ *   decay: range 1-2000 [ms]
  */
 void CompressorRMS(uint8_t dspAddress, uint16_t address, compressor_t* compressor)    // set ratio = 1 to disable compressor
 {
@@ -818,7 +818,7 @@ void CompressorRMS(uint8_t dspAddress, uint16_t address, compressor_t* compresso
 }
 
 /**
- * This function calculates the curve and the other parameters of a compressor peak block 
+ * This function calculates the curve and the other parameters of a peak compressor block 
  * @param dspAddress - the physical I2C address (7-bit format)
  * @param address - the param address of the cell
  * @param compressor - the struct which contains multiple settings for compressor control (see AidaDSP.h)
@@ -929,8 +929,36 @@ void readBack(uint8_t dspAddress, uint16_t address, uint16_t capturecount, float
   AIDA_READ_REGISTER(dspAddress, address, 3, buf);
 
   word32 = (buf[0]<<24 | buf[1]<<16 | buf[2]<<8)&0xFFFFFF00; // MSB first, convert to 5.27 format
+  
+  if(word32==0)
+    word32 = 1;
+    
+  *value = ((float)word32/((uint32_t)1 << 27)); // I'm converting from 5.27 int32 to maintain sign
+}
 
-  *value = ((float)word32/(1 << 27)); // I'm converting from 5.27 int32 to maintain sign
+/**
+ * Warning!!! ADAU144x Only!!!
+ * This function reads value of signal inside DSP chain, useful for monitoring
+ * levels from inside DSP algorithm, uses a readback cell
+ * @param dspAddress - the physical I2C address (7-bit format)
+ * @param address - the param address of the cell
+ * @param value - the return linear value in floating point of audio level on readback cell. Range: +/-1.0
+ */
+void readBack2(uint8_t dspAddress, uint16_t address, float *value){
+
+  uint8_t buf[4];
+  int32_t word32 = 0;
+
+  memset(buf, 0, 4);
+  
+  AIDA_READ_REGISTER(dspAddress, address, 4, buf);
+  
+  word32 = ((uint32_t)buf[0]<<24 | (uint32_t)buf[1]<<16 | (uint32_t)buf[2]<<8 | (uint32_t)buf[3]); // MSB first, 5.23 
+   
+  if(word32==0)
+    word32 = 1;
+  
+  *value = ((float)word32/((uint32_t)1 << 23)); // Standard fixed point 5.23 conversion
 }
 
 /**
@@ -1348,7 +1376,7 @@ void AIDA_SW_SAFELOAD_WRITE_VALUE(uint8_t dspAddress, uint16_t address, boolean 
   sw_safeload_count++;
 	if(finish == true || sw_safeload_count == 5)  // Max 5 safeload memory registers
 	{
-		value32b = sw_safeload_count+1;
+		value32b = sw_safeload_count;
 		buf[0] = (value32b>>24)&0xFF; // MSB first
 		buf[1] = (value32b>>16)&0xFF;
 		buf[2] = (value32b>>8)&0xFF;

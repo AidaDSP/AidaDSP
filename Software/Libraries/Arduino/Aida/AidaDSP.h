@@ -87,7 +87,7 @@ inline int32_t FIXED_Mul(int32_t a, int32_t b)  // This function has to be decla
  *          DSP DEFINES (do not edit)           *
  ************************************************/
 #define pi 3.1415926f
-#define FS 96000.00f
+#define FS 48000.00f
 
 // 2nd order equalizer defines
 #define Peaking         0
@@ -113,7 +113,7 @@ typedef struct compressor_t{
   float attack;     // 1 - 500 [ms]
   float hold;       // 1 - attack [ms]
   float decay;      // 2000 [ms]
-  float postgain;   // -30/+24 [dB] 
+  float postgain;   // -30/+24 [dB]
 }compressor;
 
 typedef struct equalizer_t{
