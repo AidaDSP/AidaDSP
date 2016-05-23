@@ -10,10 +10,10 @@ It's also possible to make this utility run at the end of export procedure direc
 - now when you run the command _**Action->Export System Files**_ the command utility also is being called from Sigma Studio at the end
 of export file generation procedure
 
-Syntax:
+_**Syntax:**_
 AidaDSPLoader.jar filepath comport
 
-Example:
+_**Example:**_
 AidaDSPLoader.jar C:\Tutorial_2.xml COM10
 
 FAQ

@@ -11,8 +11,8 @@ run your audio project. You can download a pre-compiled binary (.jar) [here](../
 * __AidaDSPLoader.jar__
 This is a command line utility written in _**Java**_ which you can use to "send" a Sigma Studio .xml exported file 
 to an Arduino board listening on COM port. You can download a pre-compiled binary (.jar) [here](../Java/AidaDSPLoader/bin) 
-  * Sintax: AidaDSPLoader [filepath] [comport]
-  * Example: AidaDSPLoader C:\Tutorial_2.xml COM2
+  * _**Sintax:**_ AidaDSPLoader [filepath] [comport]
+  * _**Example:**_ AidaDSPLoader C:\Tutorial_2.xml COM2
   * Sketch to use with: search in the folder Arduino 
 
 
