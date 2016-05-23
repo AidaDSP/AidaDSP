@@ -178,7 +178,7 @@ void loop()
             digitalWrite(PIN_LED, LOW);
             Serial.write(STX);
             Serial.write(ETX);
-            AIDA_WRITE_REGISTER_BLOCK( DEVICE_ADDR_7bit, addr, nData, &dataBytes[0] ); // Write new data to DSP
+            AIDA_WRITE_REGISTER_BLOCK( DEVICE_ADDR_7bit, addr, nData, &dataBytes[0] ); // Write new data to DSP !!!Debug check what's happening on libraries since with AVR it's not working
           }
           else // NACK
           {
