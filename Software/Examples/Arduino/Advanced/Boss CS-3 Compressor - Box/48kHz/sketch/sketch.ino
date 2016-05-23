@@ -96,6 +96,8 @@ uint32_t timec=0, prevtimec=0;
 
 // Values in param pulses are startup values for
 // DSP Blocks
+/*
+// Max Funky Guitar
 int32_t param1_pulses = 0; // Pre Gain
 int32_t param2_pulses = -30; // Threshold
 int32_t param3_pulses = 19; // Ratio
@@ -105,7 +107,19 @@ int32_t param6_pulses = 24; // Decay
 int32_t param7_pulses = 0; // Bright
 int32_t param8_pulses = 0; // PrePost Bright
 int32_t param9_pulses = 0; // Master Volume
-int32_t param10_pulses = 24; // Post Gain
+int32_t param10_pulses = 24; // Post Gain*/
+
+// Andre Basso
+int32_t param1_pulses = 12; // Pre Gain
+int32_t param2_pulses = -28; // Threshold
+int32_t param3_pulses = 13; // Ratio
+int32_t param4_pulses = 4; // Attack
+int32_t param5_pulses = 10; // Hold
+int32_t param6_pulses = 24; // Decay
+int32_t param7_pulses = 8; // Bright
+int32_t param8_pulses = 0; // PrePost Bright
+int32_t param9_pulses = 0; // Master Volume
+int32_t param10_pulses = 36; // Post Gain
 
 uint8_t restore = 1;  // If 1 startup values are written to DSP
 
@@ -383,7 +397,7 @@ void loop()
   if(push_e_function==1)
   {
     func_counter++;
-    if(func_counter==5)
+    if(func_counter==10)
       func_counter=0;
   }
   else if(push_e_function==2)

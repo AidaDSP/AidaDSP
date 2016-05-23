@@ -663,7 +663,7 @@ void setDrive(float value)
     if(value == 0.00)
       drive = 1.00;
     else
-      drive = (value / 10.0) + 1.0;
+      drive = ((value * 13.0)/100) + 1.0;
       //drive = value / 100.0; // Scaling to 0-1.0 range...
     
     gainCell(DEVICE_ADDR_7bit, Drive1Addr, 10.0);
