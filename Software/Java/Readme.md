@@ -13,6 +13,6 @@ This is a command line utility written in _**Java**_ which you can use to "send"
 to an Arduino board listening on COM port. You can download a pre-compiled binary (.jar) [here](../Java/AidaDSPLoader/bin) 
   * _**Sintax:**_ AidaDSPLoader [filepath] [comport]
   * _**Example:**_ AidaDSPLoader C:\Tutorial_2.xml COM2
-  * Sketch to use with: search in the folder Arduino 
+  * Sketch to use with: _**Software\Examples\Arduino\Advanced\sketch_AidaDSP_Loader\sketch_AidaDSP_Loader.ino**_
 
 
