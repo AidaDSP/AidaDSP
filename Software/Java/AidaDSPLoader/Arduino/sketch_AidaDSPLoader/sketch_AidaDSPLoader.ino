@@ -145,7 +145,7 @@ void loop()
         }
         else
         {
-          dataBytes[comcount]=inByte;
+          dataBytes[comcount]=(uint8_t)inByte;
           comcount++;
           if(nData==comcount)
           {
@@ -178,8 +178,14 @@ void loop()
             digitalWrite(PIN_LED, LOW);
             Serial.write(STX);
             Serial.write(ETX);
+            //#ifdef __AVR__ // AVR based Arduinos: Uno, Mega, etc...
+            //const uint8_t *c = &dataBytes[0]; 
+            //AIDA_WRITE_REGISTER_BLOCK( DEVICE_ADDR_7bit, addr, nData, c );
+            //#else // Arduino 2
             AIDA_WRITE_REGISTER_BLOCK( DEVICE_ADDR_7bit, addr, nData, &dataBytes[0] ); // Write new data to DSP !!!Debug check what's happening on libraries since with AVR it's not working
-          }
+            //#endif  
+        }
+          
           else // NACK
           {
             digitalWrite(PIN_LED, HIGH);
