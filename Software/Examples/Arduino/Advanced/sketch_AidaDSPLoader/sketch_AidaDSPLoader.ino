@@ -94,8 +94,6 @@ void setup()
   digitalWrite(RESET, HIGH); // Wake up DSP
   delay(100);  // Start-up delay for DSP
   AIDA_WRITE_REGISTER_BLOCK( DEVICE_ADDR_7bit, CoreRegisterR0Addr, CoreRegisterR0Size, CoreRegisterR0Data ); // Mute DAC immediately after DSP wake up
-  //program_download();    // Here we load program, parameters and hardware configuration to DSP
-  //delay(20);
   //spettacolino();
 }
 
@@ -178,12 +176,11 @@ void loop()
             digitalWrite(PIN_LED, LOW);
             Serial.write(STX);
             Serial.write(ETX);
-            //#ifdef __AVR__ // AVR based Arduinos: Uno, Mega, etc...
-            //const uint8_t *c = &dataBytes[0]; 
-            //AIDA_WRITE_REGISTER_BLOCK( DEVICE_ADDR_7bit, addr, nData, c );
-            //#else // Arduino 2
-            AIDA_WRITE_REGISTER_BLOCK( DEVICE_ADDR_7bit, addr, nData, &dataBytes[0] ); // Write new data to DSP !!!Debug check what's happening on libraries since with AVR it's not working
-            //#endif  
+            #ifdef __AVR__ // AVR based Arduinos: Uno, Mega, etc...
+            AIDA_WRITE_REGISTER( DEVICE_ADDR_7bit, addr, nData, &dataBytes[0] ); // Write new data to DSP 
+            #else // Arduino 2
+            AIDA_WRITE_REGISTER_BLOCK( DEVICE_ADDR_7bit, addr, nData, &dataBytes[0] ); // Write new data to DSP
+            #endif  
         }
           
           else // NACK
