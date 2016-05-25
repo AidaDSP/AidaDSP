@@ -20,6 +20,6 @@ _**FAQ:**_
 - What's my COM port?
 It's a string that identify the USB serial port where your Arduino board is listening to.
 
-ASSISTANCE
+_**ASSISTANCE:**_
 mail me at maxipenna@libero.it
 
