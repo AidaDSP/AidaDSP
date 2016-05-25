@@ -16,7 +16,7 @@ AidaDSPLoader.jar filepath comport
 _**Example:**_
 AidaDSPLoader.jar C:\Tutorial_2.xml COM10
 
-_**FAQ**_
+_**FAQ:**_
 - What's my COM port?
 It's a string that identify the USB serial port where your Arduino board is listening to.
 
