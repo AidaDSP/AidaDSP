@@ -96,8 +96,14 @@ uint32_t timec=0, prevtimec=0;
 
 // Values in param pulses are startup values for
 // DSP Blocks
-/*
-// Max Funky Guitar
+
+//#define MAXFUNKYELECTRICGUITAR
+//#define ANDREROCKLABBASSO
+//#define ANDREROCKLABELECTRICGUITAR
+#define ANDREROCKLABACOUSTICGUITAR
+
+#ifdef MAXFUNKYELECTRICGUITAR
+// Max Funky Electric Guitar
 int32_t param1_pulses = 0; // Pre Gain
 int32_t param2_pulses = -30; // Threshold
 int32_t param3_pulses = 19; // Ratio
@@ -107,11 +113,13 @@ int32_t param6_pulses = 24; // Decay
 int32_t param7_pulses = 0; // Bright
 int32_t param8_pulses = 0; // PrePost Bright
 int32_t param9_pulses = 0; // Master Volume
-int32_t param10_pulses = 24; // Post Gain*/
+int32_t param10_pulses = 24; // Post Gain
+#endif
 
-// Andre Basso
+#ifdef ANDREROCKLABBASSO
+// Andre Rocklab Basso
 int32_t param1_pulses = 12; // Pre Gain
-int32_t param2_pulses = -28; // Threshold
+int32_t param2_pulses = -29; // Threshold
 int32_t param3_pulses = 13; // Ratio
 int32_t param4_pulses = 4; // Attack
 int32_t param5_pulses = 10; // Hold
@@ -120,7 +128,37 @@ int32_t param7_pulses = 8; // Bright
 int32_t param8_pulses = 0; // PrePost Bright
 int32_t param9_pulses = 0; // Master Volume
 int32_t param10_pulses = 36; // Post Gain
+#endif
 
+#ifdef ANDREROCKLABELECTRICGUITAR
+// Andre Rocklab Electric Guitar
+int32_t param1_pulses = 12; // Pre Gain
+int32_t param2_pulses = -33; // Threshold
+int32_t param3_pulses = 13; // Ratio
+int32_t param4_pulses = 10; // Attack
+int32_t param5_pulses = 10; // Hold
+int32_t param6_pulses = 10; // Decay
+int32_t param7_pulses = 8; // Bright
+int32_t param8_pulses = 0; // PrePost Bright
+int32_t param9_pulses = 0; // Master Volume
+int32_t param10_pulses = 36; // Post Gain
+#endif
+
+#ifdef ANDREROCKLABACOUSTICGUITAR
+// Andre Rocklab Acoustic Guitar
+int32_t param1_pulses = 12; // Pre Gain
+int32_t param2_pulses = -33; // Threshold
+int32_t param3_pulses = 13; // Ratio
+int32_t param4_pulses = 10; // Attack
+int32_t param5_pulses = 10; // Hold
+int32_t param6_pulses = 24; // Decay
+int32_t param7_pulses = 0; // Bright
+int32_t param8_pulses = 0; // PrePost Bright
+int32_t param9_pulses = 0; // Master Volume
+int32_t param10_pulses = 36; // Post Gain
+#endif
+
+int32_t tmpencoderpulses = 0;
 uint8_t restore = 1;  // If 1 startup values are written to DSP
 
 float param1_value = 0.00; 
@@ -252,7 +290,8 @@ void setup()
   bright_eq.S = 1.0;
   bright_eq.gain = 0.0; 
   //bright_eq.f0 = 2000.0; // Guitar
-  bright_eq.f0 = 700.0; // Bass
+  //bright_eq.f0 = 700.0; // Bass
+  bright_eq.f0 = 850.0; // Acoustic Guitar
   bright_eq.boost = param7_value;
   bright_eq.type = HighShelf;
   bright_eq.phase = false;
@@ -319,7 +358,16 @@ void loop()
       case '0': // 10
         func_counter = 9; 
         break;
-      
+      case '+':
+        tmpencoderpulses = getPulses();
+        tmpencoderpulses++;
+        setPulses(tmpencoderpulses);
+        break;
+      case '-':
+        tmpencoderpulses = getPulses();
+        tmpencoderpulses--;
+        setPulses(tmpencoderpulses);
+        break;
       default:
         // Do nothing
         break;
