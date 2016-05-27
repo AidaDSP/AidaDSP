@@ -193,46 +193,6 @@ void loop()
       break;
     }
   }
-
-  /*if(digitalRead(ENC_PUSH)==LOW)  
-  {
-    //digitalWrite(PIN_LED, HIGH);
-    delay(50);  // debounce
-    if(digitalRead(ENC_PUSH)==LOW)
-    {
-      count++;
-    }   
-  }
-  else
-  {
-    if(count>0 && count<10)
-      function = 1;
-    else if(count>10 && count<30)
-      function = 2;
-    else
-      function = 0;  // No function triggered on switch
-    count = 0;
-    //digitalWrite(PIN_LED, LOW);
-  }*/
-
-  if(function==1)
-  {
-    mute ^= 1;
-  }
-  else if(function==2)
-  {
-    submenu ^=1; 
-  }
-
-  /*timec = millis();
-  if(timec-prevtimec >= 250)  // Here we manage control interface every 250ms
-  {
-    
-    // Do something!
-    //Serial.write(0x55);
-    
-    prevtimec = timec;
-  }*/
 } // End void loop
 
 void spettacolino()
