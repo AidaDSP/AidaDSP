@@ -159,7 +159,6 @@ void loop()
         {
           // Checksum OK
           send_nack = 0; // Send ACK to PC
-          //send_nack = 1; // !!!Debug
         }
         else
         {
@@ -182,17 +181,16 @@ void loop()
             AIDA_WRITE_REGISTER_BLOCK( DEVICE_ADDR_7bit, addr, nData, &dataBytes[0] ); // Write new data to DSP
             #endif  
         }
-          
-          else // NACK
-          {
-            digitalWrite(PIN_LED, HIGH);
-            Serial.write(STX);
-            Serial.write(NTX);
-            Serial.write((char)checksum);
-          }
-          comstate = stx; // Reset state machine
+        else // NACK
+        {
+          digitalWrite(PIN_LED, HIGH);
+          Serial.write(STX);
+          Serial.write(NTX);
+          Serial.write((char)checksum);
         }
-        break;
+        comstate = stx; // Reset state machine
+      }
+      break;
     }
   }
 

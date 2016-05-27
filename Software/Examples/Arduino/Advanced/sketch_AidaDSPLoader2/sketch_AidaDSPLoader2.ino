@@ -183,7 +183,6 @@ void loop()
         {
           // Checksum OK
           send_nack = 0; // Send ACK to PC
-          //send_nack = 1; // !!!Debug
         }
         else
         {
@@ -214,17 +213,16 @@ void loop()
               }
             } 
         }
-          
-          else // NACK
-          {
-            digitalWrite(PIN_LED, HIGH);
-            Serial.write(STX);
-            Serial.write(NTX);
-            Serial.write((char)checksum);
-          }
-          comstate = stx; // Reset state machine
+        else // NACK
+        {
+          digitalWrite(PIN_LED, HIGH);
+          Serial.write(STX);
+          Serial.write(NTX);
+          Serial.write((char)checksum);
         }
-        break;
+        comstate = stx; // Reset state machine
+      }
+      break;
     }
   }
 
