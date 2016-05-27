@@ -52,8 +52,14 @@ const PROGMEM unsigned char CoreRegisterR4Data[2]={0x00, 0x1C};
 
 #define COMPLETE_PROGRAM_SIZE 9244 // 2 + 5120 + 4096 + 24 + 2
 
+/************************************************
+*         START USER EDITABLE PART              *
+************************************************/
 #define SINE_SOURCE_ADDR 8u
 #define TRIANGLE_SOURCE_ADDR 11u
+/************************************************
+*         END USER EDITABLE PART                *
+************************************************/
 
 // FUNCTION PROTOTYPES
 void spettacolino();
@@ -224,6 +230,10 @@ void loop()
 
   if(NewProgramReady)
   {
+    /************************************************
+    *         START USER EDITABLE PART              *
+    ************************************************/
+    
     if(digitalRead(ENC_PUSH)==LOW)  
     {
       digitalWrite(PIN_LED, HIGH);
@@ -291,6 +301,11 @@ void loop()
       
       prevtimec = timec;
     }
+    
+    /************************************************
+    *          END USER EDITABLE PART               *
+    ************************************************/
+    
   }
 } // End void loop
 
