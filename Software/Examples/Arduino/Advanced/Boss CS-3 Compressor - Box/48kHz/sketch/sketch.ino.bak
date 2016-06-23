@@ -37,43 +37,26 @@
 // DEFINES USER INTERFACE
 #define PREGAIN_MAX 12.0f // dB
 #define PREGAIN_MIN 0.0f // dB
-#define PRECISION_1 0.1f
-
 #define THR_MAX 6.0f // dB
 #define THR_MIN -96.0f // dB
-#define PRECISION_2 0.1f
-
 #define RATIO_MAX 16.0f
 #define RATIO_MIN 1.0f
-#define PRECISION_3 0.25f
-
 #define ATTACK_MAX 500.0f // ms
 #define ATTACK_MIN 1.0f // ms
-#define PRECISION_4 0.5f
-
 #define HOLD_MAX ATTACK_MAX
 #define HOLD_MIN 1.0f // ms
-#define PRECISION_5 0.5f
-
 #define DECAY_MAX 2000.0f // ms
 #define DECAY_MIN 1.0f // ms
-#define PRECISION_6 1.0f
-
 #define BRIGHT_MAX 18.0f // dB
 #define BRIGHT_MIN -18.0f  // dB
-#define PRECISION_7 0.1f
-
-#define MASTER_VOLUME_MAX 0.00
-#define MASTER_VOLUME_MIN -80.00
-#define PRECISION_9 0.1f
-
 #define POSTGAIN_MAX 24.0f // dB
 #define POSTGAIN_MIN -30.0f // dB
-#define PRECISION_10 0.1f
-
 #define F_MIN 500.0f // Hz
 #define F_MAX 12000.0f // Hz
-#define PRECISION_11 50.0f
+
+// Master Volume
+#define MASTER_VOLUME_MAX 0.00
+#define MASTER_VOLUME_MIN -80.00
 
 #define POT_THR  4 // Threshold for filtering noise on pots (adcs)
 
@@ -93,21 +76,11 @@
 
 #define STOMPBOX // Comment to use on Aida DSP "La Prima"
 
-#define N_PRESET  4  // Not used
-enum preset_t{
-  maxfunkyelectricguitar, 
-  andreaelectricbass, 
-  andreaerocklectricguitar, 
-  andreaacousticguitar
-};
-
 // FUNCTION PROTOTYPES
 void spettacolino();
 void clearAndHome(void);
 void setBypass(uint8_t);
 void setBrightPrePost(uint8_t);
-void setNotchEq(float);
-void switchPreset(void);
 
 void print_menu_putty(void);
 void print_menu_lcd(void);
@@ -126,17 +99,70 @@ uint32_t timec=0, prevtimec=0;
 // Values in param pulses are startup values for
 // DSP Blocks
 
+#define MAXFUNKYELECTRICGUITAR
+//#define ANDREROCKLABBASSO
+//#define ANDREROCKLABELECTRICGUITAR
+//#define ANDREROCKLABACOUSTICGUITAR
+
+#ifdef MAXFUNKYELECTRICGUITAR
+// Max Funky Electric Guitar
 int32_t param1_pulses = 0; // Pre Gain
-int32_t param2_pulses = 0; // Threshold
-int32_t param3_pulses = 0; // Ratio
-int32_t param4_pulses = 0; // Attack
-int32_t param5_pulses = 0; // Hold
-int32_t param6_pulses = 0; // Decay
+int32_t param2_pulses = -30; // Threshold
+int32_t param3_pulses = 19; // Ratio
+int32_t param4_pulses = 10; // Attack
+int32_t param5_pulses = 10; // Hold
+int32_t param6_pulses = 24; // Decay
 int32_t param7_pulses = 0; // Bright
 int32_t param8_pulses = 0; // PrePost Bright
 int32_t param9_pulses = 0; // Master Volume
-int32_t param10_pulses = 0; // Post Gain
+int32_t param10_pulses = 24; // Post Gain
 int32_t param11_pulses = 0; // Parametric Eq Frequency
+#endif
+
+#ifdef ANDREROCKLABBASSO
+// Andre Rocklab Basso
+int32_t param1_pulses = 12; // Pre Gain
+int32_t param2_pulses = -29; // Threshold
+int32_t param3_pulses = 13; // Ratio
+int32_t param4_pulses = 4; // Attack
+int32_t param5_pulses = 10; // Hold
+int32_t param6_pulses = 24; // Decay
+int32_t param7_pulses = 8; // Bright
+int32_t param8_pulses = 0; // PrePost Bright
+int32_t param9_pulses = 0; // Master Volume
+int32_t param10_pulses = 36; // Post Gain
+int32_t param11_pulses = 0; // Parametric Eq Frequency
+#endif
+
+#ifdef ANDREROCKLABELECTRICGUITAR
+// Andre Rocklab Electric Guitar
+int32_t param1_pulses = 12; // Pre Gain
+int32_t param2_pulses = -33; // Threshold
+int32_t param3_pulses = 13; // Ratio
+int32_t param4_pulses = 10; // Attack
+int32_t param5_pulses = 10; // Hold
+int32_t param6_pulses = 10; // Decay
+int32_t param7_pulses = 8; // Bright
+int32_t param8_pulses = 0; // PrePost Bright
+int32_t param9_pulses = 0; // Master Volume
+int32_t param10_pulses = 36; // Post Gain
+int32_t param11_pulses = 0; // Parametric Eq Frequency
+#endif
+
+#ifdef ANDREROCKLABACOUSTICGUITAR
+// Andre Rocklab Acoustic Guitar
+int32_t param1_pulses = 12; // Pre Gain
+int32_t param2_pulses = -33; // Threshold
+int32_t param3_pulses = 13; // Ratio
+int32_t param4_pulses = 10; // Attack
+int32_t param5_pulses = 10; // Hold
+int32_t param6_pulses = 24; // Decay
+int32_t param7_pulses = 0; // Bright
+int32_t param8_pulses = 0; // PrePost Bright
+int32_t param9_pulses = 0; // Master Volume
+int32_t param10_pulses = 36; // Post Gain
+int32_t param11_pulses = 0; // Parametric Eq Frequency
+#endif
 
 int32_t tmpencoderpulses = 0;
 uint8_t restore = 1;  // If 1 startup values are written to DSP
@@ -153,7 +179,6 @@ float param9_value = 0.00;
 float param10_value = 0.00;
 float param11_value = 0.00;
 
-preset_t preset, oldpreset;
 equalizer_t bright_eq;
 equalizer_t param_eq;
 compressor_t compressor1;
@@ -246,15 +271,80 @@ void setup()
   check_config(); // !!!Debug!!!
   delay(2);
   spettacolino();
+   
+  // -- Initialization 
   
-  /*******************************************************************
-  *                        VALUE AT STARTUP                          *
-  *******************************************************************/
-  preset = andreaerocklectricguitar; // Value at startup
-  oldpreset = andreaerocklectricguitar;
-
-  // Apply preset 
-  switchPreset();
+  // Param Values
+  param1_value = processencoder(PREGAIN_MIN, PREGAIN_MAX, param1_pulses); // Pre Gain
+  param2_value = processencoder(THR_MIN, THR_MAX, param2_pulses); // Threshold
+  param3_value = processencoder(RATIO_MIN, RATIO_MAX, param3_pulses); // Ratio
+  param4_value = processencoder(ATTACK_MIN, ATTACK_MAX, param4_pulses); // Attack
+  param5_value = processencoder(HOLD_MIN, HOLD_MAX, param5_pulses); // Hold
+  param6_value = processencoder(DECAY_MIN, DECAY_MAX, param6_pulses); // Decay
+  param7_value = processencoder(BRIGHT_MIN, BRIGHT_MAX, param7_pulses); // Bright
+  param8_value = selectorwithencoder(param8_pulses, 1); // Bright Pre Post
+  param9_value = processencoder(MASTER_VOLUME_MIN, MASTER_VOLUME_MAX, param9_pulses); // Master Volume
+  param10_value = processencoder(POSTGAIN_MIN, POSTGAIN_MAX, param10_pulses); // Post Gain
+  param11_value = processencoder(F_MIN, F_MAX, param11_pulses); // Parametric Eq Frequency
+  
+  // KGain
+  gainCell(DEVICE_ADDR_7bit, KGainAddr, 2.83);
+  delayMicroseconds(100);
+  
+  // Pre Gain
+  gainCell(DEVICE_ADDR_7bit, PreGainAddr, pow(10, param1_value/20.0));
+  delayMicroseconds(100);
+  
+  // Bright Filter Pre & Post
+  bright_eq.S = 1.0;
+  bright_eq.gain = 0.0; 
+  
+  #ifdef MAXFUNKYELECTRICGUITAR
+  bright_eq.f0 = 2000.0; // Guitar
+  #endif
+  #ifdef ANDREROCKLABBASSO
+  bright_eq.f0 = 700.0; // Bass
+  #endif
+  #ifdef ANDREROCKLABELECTRICGUITAR
+  bright_eq.f0 = 2000.0; // Guitar
+  #endif
+  #ifdef ANDREROCKLABACOUSTICGUITAR
+  bright_eq.f0 = 850.0; // Acoustic Guitar
+  #endif
+  
+  bright_eq.boost = param7_value;
+  bright_eq.type = HighShelf;
+  bright_eq.phase = false;
+  SetBrightPrePost(param8_value);
+  delayMicroseconds(100);
+  
+  // Param Eq 
+  param_eq.Q = 1.41;
+  param_eq.gain = 0.0;
+  param_eq.f0 = param11_value;
+  param_eq.boost = -6.00;
+  param_eq.type = Parametric;
+  param_eq.phase = false;
+  #ifdef ANDREROCKLABACOUSTICGUITAR
+  param_eq.onoff = ON;
+  #else
+  param_eq.onoff = OFF;
+  #endif
+  EQ2ndOrd(DEVICE_ADDR_7bit, PreParametricAddr, &param_eq);
+  delayMicroseconds(100);
+  
+  compressor1.threshold = param2_value;
+  compressor1.ratio = param3_value;
+  compressor1.attack = param4_value;
+  compressor1.hold = param5_value;
+  compressor1.decay = param6_value;
+  compressor1.postgain = param10_value;
+  CompressorRMS(DEVICE_ADDR_7bit, Compressor1Addr, &compressor1);
+  delayMicroseconds(100);
+  
+  // Master Volume
+  MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, param9_value/20.0)); // Set Master Volume 
+  delayMicroseconds(100); 
    
   MuteOff();  // Mute DAC Off
   
@@ -273,37 +363,37 @@ void loop()
     inByte = Serial.read();
     switch(inByte)
     {
-      case 'q':
+      case 'a':
         func_counter = 0; 
         break;
-      case 'w':
+      case 'b':
         func_counter = 1; 
         break;
-      case 'e':
+      case 'c':
         func_counter = 2; 
         break;
-      case 'r':
+      case 'd':
         func_counter = 3; 
         break;
-      case 't':
+      case 'e':
         func_counter = 4; 
         break;
-      case 'y':
+      case 'f':
         func_counter = 5; 
         break;
-      case 'u':
+      case 'g':
         func_counter = 6; 
         break;
-      case 'i':
+      case 'h':
         func_counter = 7; 
         break;
-      case 'o':
+      case 'i':
         func_counter = 8; 
         break;
-      case 'p': 
+      case 'l': 
         func_counter = 9; 
         break;
-      case 'a':
+      case 'm':
         func_counter = 10; 
         break;
       case '+':
@@ -322,18 +412,14 @@ void loop()
     }
   }
     
-  #ifdef STOMPBOX
+  #ifdef STOMBOX
   adcvalue1 = analogRead(POT1);
   sum1 = ((((64)-1) * sum1)+((uint32_t)adcvalue1*(64)))/(64);
   out1 = sum1/64;
   pot1 = out1;
-  
   if(!isinrange(pot1, oldpot1, POT_THR))
   {
     //func_counter=0;
-    func_counter = (uint8_t)selectorwithpot(pot1, 4);
-    if(func_counter>10)
-      func_counter = 9;
     
     oldpot1 = pot1;
   }
@@ -395,9 +481,9 @@ void loop()
   
   if(push_e_function==1)
   {
-    /*func_counter++;
+    func_counter++;
     if(func_counter==11)
-      func_counter=0;*/
+      func_counter=0;
   }
   else if(push_e_function==2)
   {
@@ -415,21 +501,6 @@ void loop()
       {
         push_1_lock = 1;
         // PUSH_1 PRESSED
-        switch(preset)
-        {
-          case maxfunkyelectricguitar:
-            preset = andreaelectricbass;
-            break;
-          case andreaelectricbass:
-            preset = andreaerocklectricguitar;
-            break;
-          case andreaerocklectricguitar:
-            preset = andreaacousticguitar;
-            break;
-          case andreaacousticguitar:
-            preset = maxfunkyelectricguitar;
-            break;  
-        }
       }
     }
   }
@@ -459,6 +530,16 @@ void loop()
   timec = millis();
   if(timec-prevtimec >= 250)  // Here we manage control interface every 250ms
   { 
+    clearAndHome();    // !!!Warning use with real terminal emulation program
+    Serial.println(F("********************************"));
+    Serial.println(F("*    User control interface    *"));
+    Serial.println(F("*    AIDA Boss CS-3 Sketch     *"));
+    Serial.println(F("********************************"));
+    Serial.write('\n');
+    Serial.print(F("Encoder pulses: "));
+    Serial.println(getPulses(), DEC);
+    Serial.write('\n');
+    
     #ifdef STOMPBOX
     reinitdisplaycounter++;
     if(reinitdisplaycounter==4) // Sometimes display takes noise and corrupts its RAM...
@@ -468,11 +549,7 @@ void loop()
     }
     #endif
     
-    if(oldpreset != preset) // Using PUSH_1 and LED_1
-    {
-      switchPreset();
-      oldpreset = preset;
-    }
+    // Using PUSH_1 and LED_1
     setBypass(bypass); // Using PUSH_2 and LED_2
     
     if(old_func_counter != func_counter)
@@ -489,8 +566,7 @@ void loop()
         setPulses(param1_pulses);
       }
       param1_pulses = getPulses();
-      set_regulation_precision2(PRECISION_1);
-      param1_value = processencoder2(PREGAIN_MIN, PREGAIN_MAX); // Pre Gain
+      param1_value = processencoder(PREGAIN_MIN, PREGAIN_MAX, param1_pulses); // Pre Gain
       gainCell(DEVICE_ADDR_7bit, PreGainAddr, pow(10, param1_value/20.0));
       break;
     case 1: // Threshold
@@ -500,8 +576,7 @@ void loop()
         setPulses(param2_pulses);
       }
       param2_pulses = getPulses();
-      set_regulation_precision2(PRECISION_2);
-      param2_value = processencoder2(THR_MIN, THR_MAX); // Threshold
+      param2_value = processencoder(THR_MIN, THR_MAX, param2_pulses); // Threshold
       compressor1.threshold = param2_value;
       CompressorRMS(DEVICE_ADDR_7bit, Compressor1Addr, &compressor1);
       break;
@@ -512,8 +587,7 @@ void loop()
         setPulses(param3_pulses);
       }
       param3_pulses = getPulses();
-      set_regulation_precision2(PRECISION_3);
-      param3_value = processencoder2(RATIO_MIN, RATIO_MAX); // Ratio
+      param3_value = processencoder(RATIO_MIN, RATIO_MAX, param3_pulses); // Ratio
       compressor1.ratio = param3_value;
       CompressorRMS(DEVICE_ADDR_7bit, Compressor1Addr, &compressor1);
       break;
@@ -524,8 +598,7 @@ void loop()
         setPulses(param4_pulses);
       }
       param4_pulses = getPulses();
-      set_regulation_precision2(PRECISION_4);
-      param4_value = processencoder2(ATTACK_MIN, ATTACK_MAX); // Attack
+      param4_value = processencoder(ATTACK_MIN, ATTACK_MAX, param4_pulses); // Attack
       compressor1.attack = param4_value;
       CompressorRMS(DEVICE_ADDR_7bit, Compressor1Addr, &compressor1);
       break;
@@ -536,8 +609,7 @@ void loop()
         setPulses(param5_pulses);
       }
       param5_pulses = getPulses();
-      set_regulation_precision2(PRECISION_5);
-      param5_value = processencoder2(HOLD_MIN, HOLD_MAX); // Hold
+      param5_value = processencoder(HOLD_MIN, HOLD_MAX, param5_pulses); // Hold
       compressor1.hold = param5_value;
       CompressorRMS(DEVICE_ADDR_7bit, Compressor1Addr, &compressor1);
       break;
@@ -548,8 +620,7 @@ void loop()
         setPulses(param6_pulses);
       }
       param6_pulses = getPulses();
-      set_regulation_precision2(PRECISION_6);
-      param6_value = processencoder2(DECAY_MIN, DECAY_MAX); // Decay
+      param6_value = processencoder(DECAY_MIN, DECAY_MAX, param6_pulses); // Decay
       compressor1.decay = param6_value;
       CompressorRMS(DEVICE_ADDR_7bit, Compressor1Addr, &compressor1);
       break;  
@@ -560,8 +631,7 @@ void loop()
         setPulses(param7_pulses);
       }
       param7_pulses = getPulses();
-      set_regulation_precision2(PRECISION_7);
-      param7_value = processencoder2(BRIGHT_MIN, BRIGHT_MAX); // Bright
+      param7_value = processencoder(BRIGHT_MIN, BRIGHT_MAX, param7_pulses); // Bright
       bright_eq.boost = param7_value;
       SetBrightPrePost(param8_value);
       break;
@@ -582,8 +652,7 @@ void loop()
         setPulses(param8_pulses);
       }
       param8_pulses = getPulses();
-      set_regulation_precision2(PRECISION_9);
-      param9_value = processencoder2(MASTER_VOLUME_MIN, MASTER_VOLUME_MAX); // Master Volume
+      param9_value = processencoder(MASTER_VOLUME_MIN, MASTER_VOLUME_MAX, param9_pulses); // Master Volume
       MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, param9_value/20.0)); // Set Master Volume
       break;
     case 9: // Post Gain
@@ -593,8 +662,7 @@ void loop()
         setPulses(param10_pulses);
       }
       param10_pulses = getPulses();
-      set_regulation_precision2(PRECISION_10);
-      param10_value = processencoder2(POSTGAIN_MIN, POSTGAIN_MAX); // Post Gain
+      param10_value = processencoder(POSTGAIN_MIN, POSTGAIN_MAX, param10_pulses); // Post Gain
       compressor1.postgain = param10_value;
       CompressorRMS(DEVICE_ADDR_7bit, Compressor1Addr, &compressor1);
       break;
@@ -605,9 +673,9 @@ void loop()
         setPulses(param11_pulses);
       }
       param11_pulses = getPulses();
-      set_regulation_precision2(PRECISION_11);
-      param11_value = processencoder2(F_MIN, F_MAX); // Parametric Eq Frequency
-      setNotchEq(param11_value);
+      param11_value = processencoder(F_MIN, F_MAX, param11_pulses); // Parametric Eq Frequency
+      param_eq.f0 = param11_value;
+      EQ2ndOrd(DEVICE_ADDR_7bit, PreParametricAddr, &param_eq);
       break;
     } // End switch func_counter
 
@@ -651,30 +719,6 @@ void clearAndHome(void)
 
 void print_menu_putty(void)
 {
-  clearAndHome();    // !!!Warning use with real terminal emulation program
-  Serial.println(F("********************************"));
-  Serial.println(F("*    User control interface    *"));
-  switch(preset)
-  {
-    case maxfunkyelectricguitar:
-  Serial.println(F("*    FUNKY GUIT                *"));
-      break;
-    case andreaelectricbass:
-  Serial.println(F("*    ELEC GUIT                 *"));
-      break;
-    case andreaerocklectricguitar:
-  Serial.println(F("*    ROCK GUIT                 *"));
-      break;
-    case andreaacousticguitar:
-  Serial.println(F("*    ACUST GUIT                *"));
-      break;  
-  }
-  Serial.println(F("********************************"));
-  Serial.write('\n');
-  Serial.print(F("Encoder pulses: "));
-  Serial.println(getPulses(), DEC);
-  Serial.write('\n');
-  
   // Print menu
   Serial.print(F("Effect status: "));
   if(bypass)
@@ -695,7 +739,7 @@ void print_menu_putty(void)
   if(func_counter==2)
     Serial.print(F("    "));
   Serial.print(F("Ratio: "));
-  Serial.println(param3_value, 2);
+  Serial.println(param3_value, 1);
   if(func_counter==3)
     Serial.print(F("    "));
   Serial.print(F("Attack: "));
@@ -752,21 +796,18 @@ void print_menu_lcd(void)
     lcd.print(F("BYPASS"));
   else
   {
-    switch(preset)
-    {
-      case maxfunkyelectricguitar:
-        lcd.print(F("FUNKY GUIT"));
-        break;
-      case andreaelectricbass:
-        lcd.print(F("ELEC. BASS"));
-        break;
-      case andreaerocklectricguitar:
-        lcd.print(F("ROCK GUIT"));
-        break;
-      case andreaacousticguitar:
-        lcd.print(F("ACUST GUIT"));
-        break;  
-    }
+    #ifdef MAXFUNKYELECTRICGUITAR
+    lcd.print(F("Funk Guit. CMP"));
+    #endif
+    #ifdef ANDREROCKLABBASSO
+    lcd.print(F("Bass CMP"));
+    #endif
+    #ifdef ANDREROCKLABELECTRICGUITAR
+    lcd.print(F("Rock Guit. CMP"));
+    #endif
+    #ifdef ANDREROCKLABACOUSTICGUITAR
+    lcd.print(F("Acous. Guit. CMP"));
+    #endif
     lcd.setCursor(0, 1);
     switch(func_counter)
     {
@@ -782,7 +823,7 @@ void print_menu_lcd(void)
         break;
       case 2:
         lcd.print(F("Ratio:"));
-        lcd.print(param3_value, 2);
+        lcd.print(param3_value, 1);
         break;
       case 3:
         lcd.print(F("Attack:"));
@@ -852,27 +893,6 @@ void setBypass(uint8_t status)
 
 void SetBrightPrePost(uint8_t value)
 {
-  bright_eq.S = 1.0;
-  bright_eq.gain = 0.0; 
-  switch(preset)
-  {
-    case maxfunkyelectricguitar:
-      bright_eq.f0 = 2000.0; // Guitar
-      break;
-    case andreaelectricbass:
-      bright_eq.f0 = 700.0; // Bass
-      break;
-    case andreaerocklectricguitar:
-      bright_eq.f0 = 2000.0; // Guitar
-      break;
-    case andreaacousticguitar:
-      bright_eq.f0 = 850.0; // Acoustic Guitar
-      break;  
-  }
-  bright_eq.boost = param7_value;
-  bright_eq.type = HighShelf;
-  bright_eq.phase = false;
-  
   if(value==1) // Pre
   {
     bright_eq.onoff = ON;
@@ -1081,152 +1101,3 @@ void check_config(void)
   }
 }
 
-void switchPreset(void)
-{
-  switch(preset)
-  {
-    case maxfunkyelectricguitar:
-      param1_pulses = 0.0      /PRECISION_1; // Pre Gain
-      param2_pulses = -30.0    /PRECISION_2; // Threshold
-      param3_pulses = 4.0      /PRECISION_3; // Ratio
-      param4_pulses = 53.0     /PRECISION_4; // Attack
-      param5_pulses = 53.0     /PRECISION_5; // Hold
-      param6_pulses = 500.0    /PRECISION_6; // Decay
-      param7_pulses = 1.5      /PRECISION_7; // Bright
-      param8_pulses = 0; // PrePost Bright
-      param9_pulses = 0.0      /PRECISION_9; // Master Volume
-      param10_pulses = 6.0     /PRECISION_10; // Post Gain
-      param11_pulses = 500.0  /PRECISION_11; // Parametric Eq Frequency
-      break;
-    case andreaelectricbass:
-      param1_pulses = 1.5      /PRECISION_1; // Pre Gain
-      param2_pulses = -29.0    /PRECISION_2; // Threshold
-      param3_pulses = 2.9      /PRECISION_3; // Ratio
-      param4_pulses = 21.8     /PRECISION_4; // Attack
-      param5_pulses = 53.0     /PRECISION_5; // Hold
-      param6_pulses = 500.0    /PRECISION_6; // Decay
-      param7_pulses = 1.5      /PRECISION_7; // Bright
-      param8_pulses = 0; // PrePost Bright
-      param9_pulses = 0.0      /PRECISION_9; // Master Volume
-      param10_pulses = 9.0     /PRECISION_10; // Post Gain
-      param11_pulses = 1000.0  /PRECISION_11; // Parametric Eq Frequency
-      break;
-    case andreaerocklectricguitar:
-      param1_pulses = 1.5      /PRECISION_1; // Pre Gain
-      param2_pulses = -33.0    /PRECISION_2; // Threshold
-      param3_pulses = 3.0      /PRECISION_3; // Ratio
-      param4_pulses = 53.0     /PRECISION_4; // Attack
-      param5_pulses = 53.0     /PRECISION_5; // Hold
-      param6_pulses = 209.0    /PRECISION_6; // Decay
-      param7_pulses = 1.5      /PRECISION_7; // Bright
-      param8_pulses = 0; // PrePost Bright
-      param9_pulses = 0.0      /PRECISION_9; // Master Volume
-      param10_pulses = 6.5     /PRECISION_10; // Post Gain
-      param11_pulses = 1000.0  /PRECISION_11; // Parametric Eq Frequency
-      break;
-    case andreaacousticguitar:
-      param1_pulses = 3.0      /PRECISION_1; // Pre Gain
-      param2_pulses = -40.0    /PRECISION_2; // Threshold
-      param3_pulses = 2.2      /PRECISION_3; // Ratio
-      param4_pulses = 95.0     /PRECISION_4; // Attack
-      param5_pulses = 53.0     /PRECISION_5; // Hold
-      param6_pulses = 417.0    /PRECISION_6; // Decay
-      param7_pulses = 0.0      /PRECISION_7; // Bright
-      param8_pulses = 0; // PrePost Bright
-      param9_pulses = 0.0      /PRECISION_9; // Master Volume
-      param10_pulses = 8.8     /PRECISION_10; // Post Gain
-      param11_pulses = 1000.0  /PRECISION_11; // Parametric Eq Frequency
-      break;
-  }
-  
-  setPulses(param1_pulses);
-  set_regulation_precision2(PRECISION_1);
-  param1_value = processencoder2(PREGAIN_MIN, PREGAIN_MAX); // Pre Gain
-  
-  setPulses(param2_pulses);
-  set_regulation_precision2(PRECISION_2);
-  param2_value = processencoder2(THR_MIN, THR_MAX); // Threshold
-  
-  setPulses(param3_pulses);
-  set_regulation_precision2(PRECISION_3);
-  param3_value = processencoder2(RATIO_MIN, RATIO_MAX); // Ratio
-  
-  setPulses(param4_pulses);
-  set_regulation_precision2(PRECISION_4);
-  param4_value = processencoder2(ATTACK_MIN, ATTACK_MAX); // Attack
-  
-  setPulses(param5_pulses);
-  set_regulation_precision2(PRECISION_5);
-  param5_value = processencoder2(HOLD_MIN, HOLD_MAX); // Hold
-  
-  setPulses(param6_pulses);
-  set_regulation_precision2(PRECISION_6);
-  param6_value = processencoder2(DECAY_MIN, DECAY_MAX); // Decay
-  
-  setPulses(param7_pulses);
-  set_regulation_precision2(PRECISION_7);
-  param7_value = processencoder2(BRIGHT_MIN, BRIGHT_MAX); // Bright
-  
-  param8_value = selectorwithencoder(param8_pulses, 1); // Bright Pre Post
-  
-  setPulses(param9_pulses);
-  set_regulation_precision2(PRECISION_9);
-  param9_value = processencoder2(MASTER_VOLUME_MIN, MASTER_VOLUME_MAX); // Master Volume
-  
-  setPulses(param10_pulses);
-  set_regulation_precision2(PRECISION_10);
-  param10_value = processencoder2(POSTGAIN_MIN, POSTGAIN_MAX); // Post Gain
-  
-  setPulses(param11_pulses);
-  set_regulation_precision2(PRECISION_11);
-  param11_value = processencoder2(F_MIN, F_MAX); // Parametric Eq Frequency
-  
-  // Update values into DSP registers
-  
-  // KGain
-  gainCell(DEVICE_ADDR_7bit, KGainAddr, 2.83);
-  delayMicroseconds(100);
-  
-  // Pre Gain
-  gainCell(DEVICE_ADDR_7bit, PreGainAddr, pow(10, param1_value/20.0));
-  delayMicroseconds(100);
-  
-  // Bright Filter Pre & Post
-  SetBrightPrePost(param8_value);
-  delayMicroseconds(100);
-  
-  // Param Eq 
-  setNotchEq(param11_value);
-  delayMicroseconds(100);
-  
-  compressor1.threshold = param2_value;
-  compressor1.ratio = param3_value;
-  compressor1.attack = param4_value;
-  compressor1.hold = param5_value;
-  compressor1.decay = param6_value;
-  compressor1.postgain = param10_value;
-  CompressorRMS(DEVICE_ADDR_7bit, Compressor1Addr, &compressor1);
-  delayMicroseconds(100);
-  
-  // Master Volume
-  MasterVolumeMono(DEVICE_ADDR_7bit, MasterVolumeAddr, pow(10, param9_value/20.0)); // Set Master Volume 
-  delayMicroseconds(100); 
-  
-  setPulses(param1_pulses);
-  func_counter = 0;
-}
-
-void setNotchEq(float f)
-{
-  param_eq.Q = 1.41;
-  param_eq.gain = 0.0;
-  param_eq.f0 = f;
-  param_eq.boost = -6.00;
-  param_eq.type = Parametric;
-  param_eq.phase = false;
-  if(preset==andreaacousticguitar)
-    param_eq.onoff = ON;
-  else
-    param_eq.onoff = OFF;
-  EQ2ndOrd(DEVICE_ADDR_7bit, PreParametricAddr, &param_eq);
-}

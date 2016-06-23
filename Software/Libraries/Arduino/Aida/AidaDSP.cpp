@@ -1,8 +1,8 @@
 /*
   AidaDSP.cpp - Aida DSP library
- Copyright (c) 2015 Massimo Pennazio.  All right reserved.
+ Copyright (c) 2016 Massimo Pennazio <maxipenna@libero.it>
  
- Version: 0.18 ADAU170x (Arduino)
+ Version: 0.19 ADAU170x (Arduino)
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -54,7 +54,9 @@ volatile int32_t Pulses = 0;  // Modified in interrupt, so declared as volatile
 volatile uint8_t chA = 0, chB = 0;
 volatile uint8_t curr_state = 0x00;
 volatile uint8_t prev_state = 0x00;
+uint8_t enc_freeze = 0x00; // if 0x01, encoder stops count positive pulses, if 0x10 encoder stops count negative pulses
 int32_t max_number_of_pulses = MAX_PULSES_ROUGH; // rough regulation default
+float regulation_precision = 0.1; // decimal increment/decrement per encoder pulse used in processencoder2
 // SAFELOAD PROCEDURE
 uint8_t sw_safeload_count = 0;
 uint8_t safeload_count = 0;
@@ -65,7 +67,7 @@ uint8_t safeload_count = 0;
  ************************************************/	
  
 /**
- * Set fine or rough regulation for process encoder function
+ * Set fine or rough regulation for processencoder function
  * @param fine - if 1/true fine mode is activated
  */		  
 void set_regulation_precision(uint8_t fine)
@@ -77,7 +79,7 @@ void set_regulation_precision(uint8_t fine)
 }
 
 /**
- * Get fine or rough regulation setting
+ * Get fine or rough regulation setting used with processencoder function
  * @return fine - if 1/true fine mode is activated
  */		  
 uint8_t get_regulation_precision(void)
@@ -86,6 +88,24 @@ uint8_t get_regulation_precision(void)
     return 1; // fine regulation
   else
     return 0; // rough regulation 
+}
+
+/**
+ * Set fine or rough regulation for processencoder2 function
+ * @param precision set decimal increment/decrement per encoder pulse
+ */		  
+void set_regulation_precision2(float precision)
+{
+  regulation_precision = precision;
+}
+
+/**
+ * Get regulation precision setting used with processencoder2 function
+ * @return regulation precision 
+ */		  
+float get_regulation_precision2(void)
+{
+  return regulation_precision;
 }
 
 /**
@@ -152,6 +172,94 @@ float processencoder(float minval, float maxval, int32_t pulses)
 }
 
 /**
+ * This function transform pulses from encoder in user defined range values. 
+ * At startup Pulses = 0 since most common knob encoder types are relative, and
+ * this function returns zero/minval. Pulses can be initialized with setPulses() function. 
+ * @param minval
+ * @param maxval
+ * @return float - return a value between minval and maxval when user turn encoder knob
+ */
+float processencoder2(float minval, float maxval)
+{
+  float tmp = 0.00;
+  
+  tmp = (Pulses*regulation_precision);
+  
+  if(tmp>maxval)
+  {
+    tmp = maxval;
+    enc_freeze = 0x01; // Stop counting positive
+  }
+  else if(tmp<minval)
+  {
+    tmp = minval;
+    enc_freeze = 0x10; // Stop counting negative
+  }
+  else
+  {
+    enc_freeze = 0x00; // Free run
+  }
+  
+  return tmp;
+}
+
+/**
+ * !!!DEPRECATED!!! Do not use this function, still here for implementation example purpose
+ * This function transform pulses from encoder in user defined range values. 
+ * At startup Pulses = 0 since most common knob encoder types are relative, and
+ * this function returns middleval. Pulses can be initialized with setPulses() function. 
+ * @param minval
+ * @param maxval
+ * @return float - return a value between minval and maxval when user turn encoder knob
+ */
+/*float processencoder2(float minval, float maxval)
+{
+  float tmp = 0.00;
+  float middleval = 0.00;
+  
+  if(minval < 0 && maxval <= 0)
+  {
+    middleval = ((minval-maxval)/2.0f) + maxval;
+  }
+  else if(minval >= 0 && maxval > 0)
+  {
+    middleval = ((maxval-minval)/2.0f) + minval;
+  }
+  else if(minval < 0 && maxval > 0)
+  {
+    middleval = 0.00;
+  }
+  
+  tmp = middleval + (Pulses*regulation_precision);
+  #ifdef ENC_RES_X4
+  tmp = middleval + ((Pulses/4)*regulation_precision);
+  #else
+    #ifdef ENC_RES_X2
+      tmp = middleval + ((Pulses/2)*regulation_precision);
+    #else  
+      tmp = middleval + (Pulses*regulation_precision);
+    #endif
+  #endif
+      
+  if(Pulses==0)
+  {
+    return middleval;
+  }
+  else if(Pulses>0)
+  {
+    if(tmp>maxval)
+      tmp = maxval;
+    return tmp;
+  }
+  else if(Pulses<0)
+  {
+    if(tmp<minval)
+      tmp = minval;
+    return tmp;
+  }
+}*/
+
+/**
  * This function transform pulses from encoder in a selector which returns integer indexes 
  * useful for mux switch operation or menu entries
  * @param pulses - the actual pulses count see getPulses()
@@ -209,9 +317,14 @@ uint16_t selectorwithpot(uint16_t potval, uint8_t bits)
 {
   uint16_t result = 1;
   
-  if(bits>0 && bits<(12+1))
-	result = potval >> (12-bits);
-
+  #ifdef __AVR__  // 10 bits ADCs
+    if(bits>0 && bits<=10)
+      result = potval >> (10-bits);
+  #else // 12 bits ADCs
+    if(bits>0 && bits<=12)
+      result = potval >> (12-bits);
+  #endif
+  
   return result;
 }
 
@@ -309,9 +422,15 @@ void enc_manager(void)
       //gives 0 if clockwise rotation and 1 if counter clockwise rotation.
       change = (prev_state & PREV_MASK) ^ ((curr_state & CURR_MASK) >> 1);
       if (change == 0)
-        Pulses--;
+      {
+        if(enc_freeze!=0x10) // if negative limit is not set
+          Pulses--;
+      }
       else
-        Pulses++;
+      {
+        if(enc_freeze!=0x01) // if positive limit is not set
+          Pulses++;
+      }
     }
     else
     {
@@ -328,7 +447,7 @@ int32_t getPulses(void)
 
 void setPulses(int32_t value)
 {
-	Pulses = value;
+    Pulses = value;
 }
 
 /**
@@ -393,15 +512,18 @@ void EQ1stOrd(uint8_t dspAddress, uint16_t address, equalizer_t* equalizer){
   w0=2*pi*equalizer->f0/FS;		          //2*pi*f0/FS
   gainLinear = pow(10,(equalizer->gain/20));      //10^(gain/20)
 
-  if(equalizer->type == Lowpass){
-    a1 = pow(2.7,-w0);
-    b0 = gainLinear * (1.0 - a1);
-    b1 = 0;
-  }
-  if(equalizer->type == Highpass){
-    a1 = pow(2.7,-w0);
-    b0 = gainLinear * a1;
-    b1 = -a1 * gainLinear;
+  switch(equalizer->type)
+  {
+    case Lowpass:
+      a1 = pow(2.7,-w0);
+      b0 = gainLinear * (1.0 - a1);
+      b1 = 0;
+      break;   
+    case Highpass:
+      a1 = pow(2.7,-w0);
+      b0 = gainLinear * a1;
+      b1 = -a1 * gainLinear;
+      break;
   }
 
   if(equalizer->onoff == true)
@@ -459,105 +581,109 @@ void EQ2ndOrd(uint8_t dspAddress, uint16_t address, equalizer_t* equalizer){
   w0=2*pi*equalizer->f0/FS;		          //2*pi*f0/FS
   gainLinear = pow(10,(equalizer->gain/20));      //10^(gain/20)
 
-  if(equalizer->type==Parametric || equalizer->type==Peaking){       // Peaking filter is a Parametric filter with fixed Q???
-    alpha = sin(w0)/(2*equalizer->Q); 
-    a0 =  1 + alpha/A;
-    a1 = -2 * cos(w0);
-    a2 =  1 - alpha/A;
-    b0 = (1 + alpha*A) * gainLinear;
-    b1 = -(2 * cos(w0)) * gainLinear;
-    b2 = (1 - alpha*A) * gainLinear;
+  switch(equalizer->type)
+  {
+    case Parametric:
+    case Peaking: // Peaking filter is a Parametric filter with fixed Q???
+      alpha = sin(w0)/(2*equalizer->Q); 
+      a0 =  1 + alpha/A;
+      a1 = -2 * cos(w0);
+      a2 =  1 - alpha/A;
+      b0 = (1 + alpha*A) * gainLinear;
+      b1 = -(2 * cos(w0)) * gainLinear;
+      b2 = (1 - alpha*A) * gainLinear;
+      break;
+    case LowShelf:
+      alpha=sin(w0)/2*sqrt((A+1/A)*(1/equalizer->S-1)+2);
+      a0 =  (A+1)+(A-1)*cos(w0)+2*sqrt(A)*alpha;
+      a1 = -2*((A-1)+(A+1)*cos(w0));
+      a2 =  (A+1)+(A-1)*cos(w0)-2*sqrt(A)*alpha;
+      b0 = A*((A+1)-(A-1)*cos(w0)+2*sqrt(A)*alpha)*gainLinear;
+      b1 = 2*A*((A-1)-(A+1)*cos(w0)) * gainLinear;
+      b2 = A*((A+1)-(A-1)*cos(w0)-2*sqrt(A)*alpha)*gainLinear;
+      break;
+    case HighShelf:
+      alpha = sin(w0)/2 * sqrt( (A + 1/A)*(1/equalizer->S - 1) + 2 ); 
+      a0 =       (A+1) - (A-1)*cos(w0) + 2*sqrt(A)*alpha;
+      a1 =   2*( (A-1) - (A+1)*cos(w0) );
+      a2 =       (A+1) - (A-1)*cos(w0) - 2*sqrt(A)*alpha;
+      b0 =   A*( (A+1) + (A-1)*cos(w0) + 2*sqrt(A)*alpha ) * gainLinear;
+      b1 = -2*A*( (A-1) + (A+1)*cos(w0) ) * gainLinear;
+      b2 =   A*( (A+1) + (A-1)*cos(w0) - 2*sqrt(A)*alpha ) * gainLinear;
+      break;
+    case Lowpass:
+      alpha = sin(w0)/(2*equalizer->Q);
+      a0 =   1 + alpha;
+      a1 =  -2*cos(w0);
+      a2 =   1 - alpha;
+      b0 =  (1 - cos(w0)) * (gainLinear/2);
+      b1 =   1 - cos(w0)  * gainLinear;
+      b2 =  (1 - cos(w0)) * (gainLinear/2);
+      break;
+    case Highpass:
+      alpha = sin(w0)/(2*equalizer->Q);
+      a0 =   1 + alpha;
+      a1 =  -2*cos(w0);
+      a2 =   1 - alpha;
+      b0 =  (1 + cos(w0)) * (gainLinear/2);
+      b1 = -(1 + cos(w0)) * gainLinear;
+      b2 =  (1 + cos(w0)) * (gainLinear/2);
+      break;
+    case Bandpass:
+      alpha = sin(w0) * sinh(log(2)/(2 * equalizer->bandwidth * w0/sin(w0)));
+      a0 =   1 + alpha;
+      a1 =  -2*cos(w0);
+      a2 =   1 - alpha;
+      b0 =   alpha * gainLinear;
+      b1 =   0;
+      b2 =  -alpha * gainLinear;
+      break;
+    case Bandstop:
+      alpha = sin(w0) * sinh( log(2)/(2 * equalizer->bandwidth * w0/sin(w0)));
+      a0 =   1 + alpha;
+      a1 =  -2*cos(w0);
+      a2 =   1 - alpha;
+      b0 =   1 * gainLinear;
+      b1 =  -2*cos(w0) * gainLinear;  
+      b2 =   1 * gainLinear;
+      break;
+    case ButterworthLP:
+      alpha = sin(w0) / 2.0 * 1/sqrt(2);
+      a0 =   1 + alpha;
+      a1 =  -2*cos(w0);
+      a2 =   1 - alpha;
+      b0 =  (1 - cos(w0)) * gainLinear / 2;
+      b1 =   1 - cos(w0)  * gainLinear;
+      b2 =  (1 - cos(w0)) * gainLinear / 2;
+      break;
+    case ButterworthHP:
+      alpha = sin(w0) / 2.0 * 1/sqrt(2);
+      a0 =   1 + alpha;
+      a1 =  -2*cos(w0);
+      a2 =   1 - alpha;
+      b0 = (1 + cos(w0)) * gainLinear / 2;
+      b1 = -(1 + cos(w0)) * gainLinear;
+      b2 = (1 + cos(w0)) * gainLinear / 2;
+      break;
+    case BesselLP:
+      alpha = sin(w0) / 2.0 * 1/sqrt(3) ;
+      a0 =   1 + alpha;
+      a1 =  -2*cos(w0);
+      a2 =   1 - alpha;
+      b0 =  (1 - cos(w0)) * gainLinear / 2;
+      b1 =   1 - cos(w0)  * gainLinear;
+      b2 =  (1 - cos(w0)) * gainLinear / 2;
+      break;
+    case BesselHP:
+      alpha = sin(w0) / 2.0 * 1/sqrt(3) ;
+      a0 =   1 + alpha;
+      a1 =  -2*cos(w0);
+      a2 =   1 - alpha;
+      b0 = (1 + cos(w0)) * gainLinear / 2;
+      b1 = -(1 + cos(w0)) * gainLinear;
+      b2 = (1 + cos(w0)) * gainLinear / 2;
+      break;
   }
-  else if(equalizer->type==LowShelf){
-    alpha=sin(w0)/2*sqrt((A+1/A)*(1/equalizer->S-1)+2);
-    a0 =  (A+1)+(A-1)*cos(w0)+2*sqrt(A)*alpha;
-    a1 = -2*((A-1)+(A+1)*cos(w0));
-    a2 =  (A+1)+(A-1)*cos(w0)-2*sqrt(A)*alpha;
-    b0 = A*((A+1)-(A-1)*cos(w0)+2*sqrt(A)*alpha)*gainLinear;
-    b1 = 2*A*((A-1)-(A+1)*cos(w0)) * gainLinear;
-    b2 = A*((A+1)-(A-1)*cos(w0)-2*sqrt(A)*alpha)*gainLinear;
-  }
-  else if(equalizer->type==HighShelf){
-    alpha = sin(w0)/2 * sqrt( (A + 1/A)*(1/equalizer->S - 1) + 2 ); 
-    a0 =       (A+1) - (A-1)*cos(w0) + 2*sqrt(A)*alpha;
-    a1 =   2*( (A-1) - (A+1)*cos(w0) );
-    a2 =       (A+1) - (A-1)*cos(w0) - 2*sqrt(A)*alpha;
-    b0 =   A*( (A+1) + (A-1)*cos(w0) + 2*sqrt(A)*alpha ) * gainLinear;
-    b1 = -2*A*( (A-1) + (A+1)*cos(w0) ) * gainLinear;
-    b2 =   A*( (A+1) + (A-1)*cos(w0) - 2*sqrt(A)*alpha ) * gainLinear;
-  }
-  else if(equalizer->type==Lowpass){
-    alpha = sin(w0)/(2*equalizer->Q);
-    a0 =   1 + alpha;
-    a1 =  -2*cos(w0);
-    a2 =   1 - alpha;
-    b0 =  (1 - cos(w0)) * (gainLinear/2);
-    b1 =   1 - cos(w0)  * gainLinear;
-    b2 =  (1 - cos(w0)) * (gainLinear/2);
-  }
-  else if(equalizer->type==Highpass){
-    alpha = sin(w0)/(2*equalizer->Q);
-    a0 =   1 + alpha;
-    a1 =  -2*cos(w0);
-    a2 =   1 - alpha;
-    b0 =  (1 + cos(w0)) * (gainLinear/2);
-    b1 = -(1 + cos(w0)) * gainLinear;
-    b2 =  (1 + cos(w0)) * (gainLinear/2);
-  }	
-  else if(equalizer->type==Bandpass){
-    alpha = sin(w0) * sinh(log(2)/(2 * equalizer->bandwidth * w0/sin(w0)));
-    a0 =   1 + alpha;
-    a1 =  -2*cos(w0);
-    a2 =   1 - alpha;
-    b0 =   alpha * gainLinear;
-    b1 =   0;
-    b2 =  -alpha * gainLinear;
-  }
-  else if(equalizer->type==Bandstop){
-    alpha = sin(w0) * sinh( log(2)/(2 * equalizer->bandwidth * w0/sin(w0)));
-    a0 =   1 + alpha;
-    a1 =  -2*cos(w0);
-    a2 =   1 - alpha;
-    b0 =   1 * gainLinear;
-    b1 =  -2*cos(w0) * gainLinear;  
-    b2 =   1 * gainLinear;
-  }
-  else if(equalizer->type==ButterworthLP){
-    alpha = sin(w0) / 2.0 * 1/sqrt(2);
-    a0 =   1 + alpha;
-    a1 =  -2*cos(w0);
-    a2 =   1 - alpha;
-    b0 =  (1 - cos(w0)) * gainLinear / 2;
-    b1 =   1 - cos(w0)  * gainLinear;
-    b2 =  (1 - cos(w0)) * gainLinear / 2;
-  }
-  else if(equalizer->type==ButterworthHP){
-    alpha = sin(w0) / 2.0 * 1/sqrt(2);
-    a0 =   1 + alpha;
-    a1 =  -2*cos(w0);
-    a2 =   1 - alpha;
-    b0 = (1 + cos(w0)) * gainLinear / 2;
-    b1 = -(1 + cos(w0)) * gainLinear;
-    b2 = (1 + cos(w0)) * gainLinear / 2;
-  }
-  else if(equalizer->type==BesselLP){
-    alpha = sin(w0) / 2.0 * 1/sqrt(3) ;
-    a0 =   1 + alpha;
-    a1 =  -2*cos(w0);
-    a2 =   1 - alpha;
-    b0 =  (1 - cos(w0)) * gainLinear / 2;
-    b1 =   1 - cos(w0)  * gainLinear;
-    b2 =  (1 - cos(w0)) * gainLinear / 2;
-  }
-  else if(equalizer->type==BesselHP){
-    alpha = sin(w0) / 2.0 * 1/sqrt(3) ;
-    a0 =   1 + alpha;
-    a1 =  -2*cos(w0);
-    a2 =   1 - alpha;
-    b0 = (1 + cos(w0)) * gainLinear / 2;
-    b1 = -(1 + cos(w0)) * gainLinear;
-    b2 = (1 + cos(w0)) * gainLinear / 2;
-  } 
   
   // For Sigma DSP implementation we need to normalize all the coefficients respect to a0
   // and inverting by sign a1 and a2  
@@ -929,6 +1055,7 @@ void CompressorPeak(uint8_t dspAddress, uint16_t address, compressor_t* compress
 }
 
 /**
+ * Warning!!! ADAU177x Only!!!
  * This function reads value of signal inside DSP chain, useful for monitoring
  * levels from inside DSP algorithm, uses a readback cell
  * @param dspAddress - the physical I2C address (7-bit format)
@@ -975,11 +1102,13 @@ void readBack2(uint8_t dspAddress, uint16_t address, float *value){
   AIDA_READ_REGISTER(dspAddress, address, 4, buf);
   
   word32 = ((uint32_t)buf[0]<<24 | (uint32_t)buf[1]<<16 | (uint32_t)buf[2]<<8 | (uint32_t)buf[3]); // MSB first, 5.23 
+  word32 = (word32 << 4)&0xFFFFFFF0; // MSB first, 5.27
    
   if(word32==0)
     word32 = 1;
   
-  *value = ((float)word32/((uint32_t)1 << 23)); // Standard fixed point 5.23 conversion
+  //*value = ((float)word32/((uint32_t)1 << 23)); // Standard fixed point 5.23 conversion
+  *value = ((float)word32/((uint32_t)1 << 27)); // I'm converting from 5.27 int32 to maintain sign
 }
 
 /**
@@ -1288,7 +1417,20 @@ void AIDA_WRITE_VALUE(uint8_t dspAddress, uint16_t address, float value)
   float_to_fixed(value, buf);
 
   AIDA_WRITE_REGISTER(dspAddress, address, 4, buf);
+}
 
+void AIDA_WRITE_VALUE28(uint8_t dspAddress, uint16_t address, uint32_t value)
+{
+  uint8_t buf[4];
+  
+  value&=0x0FFFFFFF; // Four bits don't care since I have 28 bits and 32 bits data
+  
+  buf[0] = value>>24;
+  buf[1] = (value&0x00FFFFFF)>>16;
+  buf[2] = (value&0x0000FFFF)>>8;
+  buf[3] = value&0x000000FF;
+  
+  AIDA_WRITE_REGISTER(dspAddress, address, 4, buf);
 }
 
 void AIDA_SAFELOAD_WRITE_REGISTER(uint8_t dspAddress, uint16_t address, boolean finish, uint8_t *data)
