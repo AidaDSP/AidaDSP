@@ -1,8 +1,8 @@
 /*
   AidaDSP.h - Aida DSP library
- Copyright (c) 2015 Massimo Pennazio.  All right reserved.
+ Copyright (c) 2016 Massimo Pennazio <maxipenna@libero.it>
  
- Version: 0.18 ADAU144x (Arduino)
+ Version: 0.19 ADAU144x (Arduino)
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -113,7 +113,7 @@ typedef struct compressor_t{
   float attack;     // 1 - 500 [ms]
   float hold;       // 1 - attack [ms]
   float decay;      // 2000 [ms]
-  float postgain;   // -30/+24 [dB] 
+  float postgain;   // -30/+24 [dB]
 }compressor;
 
 typedef struct equalizer_t{
@@ -133,7 +133,7 @@ typedef struct toneCtrl_t{
   float Boost_Treble_dB;
   float Freq_Bass;
   float Freq_Treble;
-  unsigned char phase;    // 0 or False -> in phase (0°) 1 or True -> 180°
+  unsigned char phase;    // 0 or False -> in phase (0°) 1 or True -> 180°    
   unsigned char onoff;    // False -> off True -> on
 }toneCtrl;
 
@@ -144,7 +144,10 @@ typedef struct toneCtrl_t{
 void linspace(float x1, float x2, float n, float vect[]);
 void set_regulation_precision(uint8_t fine);
 uint8_t get_regulation_precision(void);
+void set_regulation_precision2(float precision);
+float get_regulation_precision2(void);
 float processencoder(float minval, float maxval, int32_t pulses);
+float processencoder2(float minval, float maxval);
 uint16_t selectorwithencoder(int32_t pulses, uint8_t bits);
 float processpot(float minval, float maxval, uint16_t potvalue);
 uint16_t selectorwithpot(uint16_t potval, uint8_t bits);
@@ -187,6 +190,7 @@ void float_to_fixed(float value, uint8_t *buffer);
 void AIDA_WRITE_REGISTER(uint8_t dspAddress, uint16_t address, uint8_t length, uint8_t *data);
 void AIDA_WRITE_REGISTER_BLOCK(uint8_t dspAddress, uint16_t address, uint16_t length, const uint8_t *data);
 void AIDA_WRITE_VALUE(uint8_t dspAddress, uint16_t address, float value);
+void AIDA_WRITE_VALUE28(uint8_t dspAddress, uint16_t address, uint32_t value);
 void AIDA_SAFELOAD_WRITE_REGISTER(uint8_t dspAddress, uint16_t address, boolean finish, uint8_t *data);
 void AIDA_SAFELOAD_WRITE_VALUE(uint8_t dspAddress, uint16_t address, boolean finish, float value);
 void AIDA_SW_SAFELOAD_WRITE_REGISTER(uint8_t dspAddress, uint16_t address, boolean finish, uint8_t *data);
