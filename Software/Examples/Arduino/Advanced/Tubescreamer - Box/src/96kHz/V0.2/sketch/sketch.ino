@@ -27,7 +27,7 @@
    . Potentiometer 500K/470K Lin (Drive)
    . Potentiometer 20K/22K Lin (Tone)
    . Potentiometer 100K Log (Volume)
- - V0.2 improved dynamics (LUTs are now calculated for +/-5V input signal) and highpass filter move its frequency accordingly drive setting
+ - V0.2 improved dynamics (LUTs are now calculated for +/-5V input signal) and highpass filter moves its frequency depending drive setting
  - V0.1 first version
  
  created February 2016

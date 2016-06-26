@@ -25,7 +25,26 @@ res = zeros(N1, N2);
 for i = 1 : N1
 
     R2 = 51000 + 500000*drive(i);
-   
+    
+    % Continue
+    s = tf('s');
+    Z1 = (1+(s*R1*Cz))/(s*Cz);
+    Z2 = R2/(1+s*R2*Cc);
+    tf1c = (Z2/Z1)+1;
+    %tf1c = Z2/Z1;
+    figure(1);
+    hold on;
+    bode(tf1c,P);
+    zpk(tf1c)
+    
+    if(i==1)
+        msg = sprintf('Bode TS9 main filter with GAIN varying from 0 to 1');
+        title(msg);
+    end
+    grid on;
+    
+    % Discrete
+    
     a1 = (R1 + R2) * Cz * 2 * Fs;
     a2 = R1 * Cz * 2 * Fs;
     B0 = (1 + a1) / (1 + a2)
@@ -37,9 +56,10 @@ for i = 1 : N1
     tf1z = (B0+B1*(z^-1))/(1+(A1*(z^-1)));
     zpk(tf1z)
 
-    figure(1);
+    figure(2);
     hold on;
     bode(tf1z,P);
+    
     if(i==1)
         msg = sprintf('Bode TS9 main filter with GAIN varying from 0 to 1');
         title(msg);
@@ -47,28 +67,42 @@ for i = 1 : N1
     grid on;
     
     % DIODE TECHNOLOGY PARAMETERS
-    %Is = 10 * 1e-12; % Si
-    %mUt = 30 * 1e-3; % Si
-    Is = 10 * 1e-9; % Ge
-    mUt = 30 * 1e-3; % Ge
+    K = 1.38e-23; % Boltzmann constant
+    T = 273 + 25; % room temperature
+    q = 1.60e-19;
+    Ut = (K*T)/q; % thermal voltage
+    
+    % Si 1N914A LTSpiceIV
+    %m = 1.752; % ideality factor
+    %Is = 2.52 * 1e-12; 
+    
+    % Si 1N914A P. Mathys 
+    %m = 2.0858;
+    %Is = 1.4566e-008;
+     
+    % Ge 1N34A LTSpiceIV
+    Is = 2.6e-6; 
+    m = 1.6;
     % ------------------------- %
+    
+     mUt = m*Ut; 
     
     D=sym('D');
     X=sym('X');
     
-    %f = (X/(R1*Cc)) - (D/(R2*Cc)) - (Is/Cc) * (exp(D/mUt) - exp(-D/mUt)); %
     f = (X/(R2*Cc)) - (D/(R2*Cc)) - (Is/Cc) * (exp(D/mUt) - exp(-D/mUt)); % Why is lecit to substitute R1 for R2??? O_o
     fname1 = inline(char(f));
     
-    vect1 = linspace(-2.0, 2.0, N2); % Evaluating non linear function for X -1:1 
+    vect1 = linspace(-5, 5, N2); % Evaluating non linear function for X -1:1 
     for j = 1:N2
-       %func = feval(fname1, D, vect1(j)*2.83); % Obtain an expression with only Y choosing X and X2
+       %func = feval(fname1, D, vect1(j)*2.83); % Obtain an expression with only Y choosing X and X2 
        func = feval(fname1, D, vect1(j)); % Obtain an expression with only Y choosing X and X2
        fname2 = inline(char(func));
-       res(i,j) = fzero(fname2, 0); % Find roots near current input value and divide it by signal input
+       %res(i,j) = fzero(fname2, 0); % Find roots near current input value and divide it by signal input
+       res(i,j) = 5.8204*fzero(fname2, 0); % Ge RMS compensated respect to Si
     end
 
-    figure(2);
+    figure(3);
     hold on;
     plot(vect1, res(i,:), '-b');
     grid on;
@@ -117,7 +151,7 @@ for i = 1 : N1
     
     zpk(tf2)
     
-    figure(3);
+    figure(4);
     hold on;
     bode(tf2,P);
     if(i==1)
@@ -128,11 +162,31 @@ for i = 1 : N1
     
 end
 
-for i = 1 : 5
-    R2 = 51000 + 500000*drive(i);
-    fdtc = ((s / (R1*(s+(1/(R1*Cz)))))*R2)+1;
-    zpk(fdtc)
+% ***********************************
+% *     Time domain simulation      *
+% ***********************************
+
+t = linspace(0.0, 2e-3, 100); % timescale
+w = 1000.0*(2*pi); % rad/s = Hz / 2*pi
+in = 5*sin(w.*t);
+out = zeros(1, 100);
+
+x = linspace(-5, 5, N2);
+y = res(1, :);
+
+for i = 1 : 100
+    
+  out(i) = spline(x, y, in(i)); % Evaluate out(i) with the interpolated y=LUT(x)
+    
 end
+
+figure(5);
+plot(t, in, '-b', t, out, '-r');
+grid on;
+msg = sprintf('Time domain simulation of LUT');
+title(msg);
+
+rms = sqrt(mean(out.^2)) % Calculate RMS value of the output signal
 
 % clear s
 % clear T
