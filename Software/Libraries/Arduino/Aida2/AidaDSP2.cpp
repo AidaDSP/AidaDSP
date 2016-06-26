@@ -19,7 +19,7 @@
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
  
-#include "AidaDSP.h"
+#include "AidaDSP2.h"
 
 #define ADAU144x
 
