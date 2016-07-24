@@ -2,7 +2,7 @@
   AidaDSP.h - Aida DSP library
  Copyright (c) 2016 Massimo Pennazio <maxipenna@libero.it>
  
- Version: 0.19 ADAU170x (Arduino)
+ Version: 0.20 ADAU170x (Arduino)
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -88,6 +88,7 @@ inline int32_t FIXED_Mul(int32_t a, int32_t b)  // This function has to be decla
  ************************************************/
 #define pi 3.1415926f
 #define FS 48000.00f
+#define SR (uint32_t)(1.0f/FS)
 
 // 2nd order equalizer defines
 #define Peaking         0

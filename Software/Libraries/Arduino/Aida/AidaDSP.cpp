@@ -2,7 +2,7 @@
   AidaDSP.cpp - Aida DSP library
  Copyright (c) 2016 Massimo Pennazio <maxipenna@libero.it>
  
- Version: 0.19 ADAU170x (Arduino)
+ Version: 0.20 ADAU170x (Arduino)
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -1514,6 +1514,7 @@ void AIDA_SW_SAFELOAD_WRITE_REGISTER(uint8_t dspAddress, uint16_t address, boole
 		AIDA_WRITE_REGISTER(dspAddress, 0x0007, 4, buf);  //  Write nvalues in 0x0007, start Safeload Write
 		sw_safeload_count = 0; // Reset counter		
 	}
+  delayMicroseconds(SR); // See page 82 of ADAU144x datasheet
 }
 
 void AIDA_SW_SAFELOAD_WRITE_VALUE(uint8_t dspAddress, uint16_t address, boolean finish, float value)
@@ -1547,6 +1548,7 @@ void AIDA_SW_SAFELOAD_WRITE_VALUE(uint8_t dspAddress, uint16_t address, boolean 
 		AIDA_WRITE_REGISTER(dspAddress, 0x0007, 4, buf);  //  Write nvalues in 0x0007, start Safeload Write
 		sw_safeload_count = 0; // Reset counter		
 	}
+  delayMicroseconds(SR); // See page 82 of ADAU144x datasheet
 }
 
 void AIDA_SW_SAFELOAD_WRITE_VALUES(uint8_t dspAddress, uint16_t address, uint8_t nvalues, float *values)
@@ -1575,6 +1577,7 @@ void AIDA_SW_SAFELOAD_WRITE_VALUES(uint8_t dspAddress, uint16_t address, uint8_t
 	buf[2] = (value32b>>8)&0xFF;
 	buf[3] = (value32b)&0xFF;
 	AIDA_WRITE_REGISTER(dspAddress, 0x0007, 4, buf);  //  Write nvalues in 0x0007
+  delayMicroseconds(SR); // See page 82 of ADAU144x datasheet
 }
 
 void AIDA_READ_REGISTER(uint8_t dspAddress, uint16_t address, uint8_t length, uint8_t *data)
