@@ -52,4 +52,10 @@ Check out our [examples](https://github.com/AidaDSP/AidaDSP/tree/master/Software
 - **Where to BUY:** [Tindie](https://www.tindie.com/products/MaxAidaDSP/aida-dsp-la-prima/)
 - [Follow us on **Facebook**](https://www.facebook.com/AidaDSPProject/)
 
+### Partners
+
+# Manufacturing
+![Key Electronic System](https://github.com/AidaDSP/AidaDSP/blob/master/Images/KeyElectronicSystemLogo.jpg)
+
+
 Aida DSP Team 2016
