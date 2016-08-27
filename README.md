@@ -54,7 +54,7 @@ Check out our [examples](https://github.com/AidaDSP/AidaDSP/tree/master/Software
 
 ### Partners
 
-Manufacturing
+**Manufacturing:**
 
 ![Key Electronic System](https://github.com/AidaDSP/AidaDSP/blob/master/Images/KeyElectronicSystemLogo.jpg)
 
