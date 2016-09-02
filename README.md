@@ -58,4 +58,6 @@ Check out our [examples](https://github.com/AidaDSP/AidaDSP/tree/master/Software
 
 ![Key Electronic System](https://github.com/AidaDSP/AidaDSP/blob/master/Images/KeyElectronicSystemLogo.jpg)
 
-Aida DSP Team 2016
+KEY ELECTRONIC SYSTEM - TORINO
+
+_**Aida DSP Team 2016**_
