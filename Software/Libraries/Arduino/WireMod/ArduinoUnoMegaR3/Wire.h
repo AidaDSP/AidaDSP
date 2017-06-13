@@ -17,7 +17,7 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
   Modified 2012 by Todd Krein (todd@krein.org) to implement repeated starts
-  Modified 2015 by Massimo Pennazio (max@aidadsp.com) to implement block write (I2C write from program flash pointer)
+  Modified 2015 by Massimo Pennazio (maxipenna@libero.it) to implement block write (I2C write from program flash pointer)
 */
 
 #ifndef TwoWire_h
