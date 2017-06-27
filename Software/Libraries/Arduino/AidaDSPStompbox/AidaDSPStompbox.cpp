@@ -1,6 +1,6 @@
 /*
-  AidaDSP.cpp - Aida DSP library
- Copyright (c) 2016 Massimo Pennazio <maxipenna@libero.it>
+  AidaDSP.cpp - Aida DSP Stompbox library
+ Copyright (c) 2017 Massimo Pennazio <maxipenna@libero.it>
 
  Version: 0.20 ADAU170x (Arduino)
 
@@ -19,7 +19,7 @@
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include "AidaDSP.h"
+#include "AidaDSPStompbox.h"
 
 #define ADAU170x
 
@@ -29,12 +29,14 @@
   #endif
 #endif
 
-#ifdef __AVR__
-#define WIRE Wire
-#else
-#define WIRE Wire1 // Arduino2
-#endif
-#define FULLRANGEVAL 1024.0f
+//#ifdef __AVR__
+//#define WIRE Wire
+//#elseif __SAM3X8E__
+//#define WIRE Wire1 // Arduino2
+//#elseif __SAMD21E18A__
+#define WIRE Wire // Arduino Zero
+//#endif
+#define FULLRANGEVAL 4096.0f
 #define MIDDLEVAL (FULLRANGEVAL/2)
 
 #ifdef ENC_RES_X4
@@ -204,62 +206,6 @@ float processencoder2(float minval, float maxval)
 }
 
 /**
- * !!!DEPRECATED!!! Do not use this function, still here for implementation example purpose
- * This function transform pulses from encoder in user defined range values.
- * At startup Pulses = 0 since most common knob encoder types are relative, and
- * this function returns middleval. Pulses can be initialized with setPulses() function.
- * @param minval
- * @param maxval
- * @return float - return a value between minval and maxval when user turn encoder knob
- */
-/*float processencoder2(float minval, float maxval)
-{
-  float tmp = 0.00;
-  float middleval = 0.00;
-
-  if(minval < 0 && maxval <= 0)
-  {
-    middleval = ((minval-maxval)/2.0f) + maxval;
-  }
-  else if(minval >= 0 && maxval > 0)
-  {
-    middleval = ((maxval-minval)/2.0f) + minval;
-  }
-  else if(minval < 0 && maxval > 0)
-  {
-    middleval = 0.00;
-  }
-
-  tmp = middleval + (Pulses*regulation_precision);
-  #ifdef ENC_RES_X4
-  tmp = middleval + ((Pulses/4)*regulation_precision);
-  #else
-    #ifdef ENC_RES_X2
-      tmp = middleval + ((Pulses/2)*regulation_precision);
-    #else
-      tmp = middleval + (Pulses*regulation_precision);
-    #endif
-  #endif
-
-  if(Pulses==0)
-  {
-    return middleval;
-  }
-  else if(Pulses>0)
-  {
-    if(tmp>maxval)
-      tmp = maxval;
-    return tmp;
-  }
-  else if(Pulses<0)
-  {
-    if(tmp<minval)
-      tmp = minval;
-    return tmp;
-  }
-}*/
-
-/**
  * This function transform pulses from encoder in a selector which returns integer indexes
  * useful for mux switch operation or menu entries
  * @param pulses - the actual pulses count see getPulses()
@@ -351,47 +297,20 @@ uint8_t isinrange(int16_t value, int16_t reference, int16_t threshold)
  */
 void InitAida(void)
 {
-  #ifdef __AVR__
-    pinMode(ENC_PUSH, INPUT); // 3.3v pull-up provided on Aida DSP board
-    pinMode(ENCA, INPUT);
-    pinMode(ENCB, INPUT);
-    #ifdef ENC_RES_X1
-      attachInterrupt(1, enc_manager, RISING);  // Arduino Mega: interrupts are on fixed pins only (ENCA, Pin 3)
-    #else
-      #ifdef ENC_RES_X2
-        attachInterrupt(0, enc_manager, RISING);  // Arduino Mega: interrupts are on fixed pins only (ENCB, Pin 2)
-        attachInterrupt(1, enc_manager, RISING);  // Arduino Mega: interrupts are on fixed pins only (ENCA, Pin 3)
-      #else
-        attachInterrupt(0, enc_manager, CHANGE);  // Arduino Mega: interrupts are on fixed pins only (ENCB, Pin 2)
-        attachInterrupt(1, enc_manager, CHANGE);  // Arduino Mega: interrupts are on fixed pins only (ENCA, Pin 3)
-      #endif
-    #endif
-  #else
-    pinMode(ENC_PUSH, INPUT_PULLUP);
-    pinMode(ENCA, INPUT_PULLUP);
-    pinMode(ENCB, INPUT_PULLUP);
-    #ifdef ENC_RES_X1
-      attachInterrupt(ENCA, enc_manager, RISING); // Interrupt is fired whenever ENC changes state
-    #else
-      #ifdef ENC_RES_X2
-        attachInterrupt(ENCA, enc_manager, RISING); // Interrupt is fired whenever ENC changes state
-        attachInterrupt(ENCB, enc_manager, RISING); // Both channels, rising for x2 resolution 360°/24*2
-      #else
-        attachInterrupt(ENCA, enc_manager, CHANGE); // Interrupt is fired whenever ENC changes state
-        attachInterrupt(ENCB, enc_manager, CHANGE); // Both channels, rising-falling for x4 resolution 360°/24*4
-      #endif
-    #endif
-  #endif
+  // Encoder management disabled
 
-  pinMode(SBOOT, OUTPUT);
+  pinMode(FOOTSW, INPUT_PULLUP);
+  pinMode(RANDOMSW, INPUT_PULLUP);
+
   pinMode(RESET, OUTPUT);
+  pinMode(STATUS_LED, OUTPUT);
 
-  digitalWrite(SBOOT, LOW);  // Self-boot: DSP in uC control mode
+  analogReadResolution(12); // Adjust resolution of ADCs to 12-bit
+
   digitalWrite(RESET, LOW);  // Hold DSP in RESET state (halted)
 
   WIRE.begin(); // join i2c bus (address optional for master)
   WIRE.setClock(400000UL); // use i2c peripheral module in fast-mode (400kHz i2c clk)
-  //WIRE.setClock(100000UL); // use i2c peripheral module in default-mode (100kHz i2c clk)
   delay(10);
 }
 
@@ -1586,7 +1505,6 @@ void AIDA_READ_REGISTER(uint8_t dspAddress, uint16_t address, uint8_t length, ui
   byte LSByte = 0x00;
   byte MSByte = 0x00;
 
-  #ifdef __AVR__
   WIRE.beginTransmission(dspAddress);  // Begin write
 
   // Send the internal address I want to read
@@ -1598,9 +1516,6 @@ void AIDA_READ_REGISTER(uint8_t dspAddress, uint16_t address, uint8_t length, ui
   WIRE.endTransmission(false);    // Write out data to I2C but don't send stop condition on I2C bus
 
   WIRE.requestFrom(dspAddress, length);    // request n bytes from slave device
-  #else
-  WIRE.requestFromReg16(dspAddress, address, length, true); // Arduino 2 doesn't support restart natively O.o
-  #endif
 
   while(WIRE.available())         // slave may send less than requested
   {
