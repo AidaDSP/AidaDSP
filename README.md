@@ -1,6 +1,6 @@
-### Aida DSP "La Prima"
+### Aida DSP
 
-Aida DSP "La Prima" is an audio shield for Arduino and Energia (TM4C123) with a 24bit/48-96-192kHz DSP on it.
+Aida DSP is an audio shield for Arduino
 
 ### Salient specs
 - Compact design size (Arduino shield form factor)
