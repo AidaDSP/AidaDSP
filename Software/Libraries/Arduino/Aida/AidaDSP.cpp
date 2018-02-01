@@ -1055,7 +1055,7 @@ void CompressorPeak(uint8_t dspAddress, uint16_t address, compressor_t* compress
 }
 
 /**
- * Warning!!! ADAU177x Only!!!
+ * Warning!!! ADAU170x Only!!!
  * This function reads value of signal inside DSP chain, useful for monitoring
  * levels from inside DSP algorithm, uses a readback cell
  * @param dspAddress - the physical I2C address (7-bit format)
