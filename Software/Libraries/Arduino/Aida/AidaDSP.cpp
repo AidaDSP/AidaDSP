@@ -1,8 +1,8 @@
 /*
   AidaDSP.cpp - Aida DSP library
- Copyright (c) 2016 Massimo Pennazio <maxipenna@libero.it>
+ Copyright (c) 2018 Massimo Pennazio <maxipenna@libero.it>
 
- Version: 0.20 ADAU170x (Arduino)
+ Version: 0.21 ADAU170x
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -30,9 +30,12 @@
 #endif
 
 #ifdef __AVR__
-#define WIRE Wire
+  #define WIRE Wire
+#elseif CORE_TEENSY
+  #warning CORE_TEENSY in use
+  #define WIRE Wire
 #else
-#define WIRE Wire1 // Arduino2
+  #define WIRE Wire1 // Arduino2
 #endif
 #define FULLRANGEVAL 1024.0f
 #define MIDDLEVAL (FULLRANGEVAL/2)
@@ -1402,12 +1405,41 @@ void AIDA_WRITE_REGISTER(uint8_t dspAddress, uint16_t address, uint8_t length, u
 void AIDA_WRITE_REGISTER_BLOCK(uint8_t dspAddress, uint16_t address, uint16_t length, const uint8_t *data)
 {
   uint16_t res = 0;
+  uint16_t i,j;
+  uint8_t nbytes = 0;
 
   WIRE.beginTransmission(dspAddress);  // Begin write
+  LSByte = (byte)address & 0xFF;
+  MSByte = address >> 8;
+  WIRE.write(MSByte);             // Sends High Address
+  WIRE.write(LSByte);             // Sends Low Address
 
-  res = WIRE.writeBlock(data, length, address);
-
-  WIRE.endTransmission(true);     // Write out data to I2C and stop transmitting
+  #ifdef ADAU170x
+    if(address == 1024) // ProgramDataAddr, 5 bytes per transfer
+      nbytes = 5;
+    else // Everything else is 4 bytes addressed
+      nbytes = 4;
+  #else // ADAU144x
+    if(address == 8192) // ProgramDataAddr, 6 bytes per transfer
+      nbytes = 6;
+    else if(address == 57344 || address == 57408)
+      nbytes = 2;
+    else
+      nbytes = 4;
+  #endif
+  
+  // Write data through I2C
+  for(i=0;i<length;i+=nbytes)
+  {
+    for(j=0;i<nbytes;j++)
+    {
+      WIRE.write((byte)data[i+j]); // sends bytes
+    }
+    if((i+nbytes) == length) // last?
+      WIRE.endTransmission(true); // stop transmitting
+    else
+      WIRE.endTransmission(false); // repeated start (WARNING!!! not supported in ArduinoCore-sam or Arduino 2)
+  }
 }
 
 void AIDA_WRITE_VALUE(uint8_t dspAddress, uint16_t address, float value)
@@ -1581,26 +1613,8 @@ void AIDA_SW_SAFELOAD_WRITE_VALUES(uint8_t dspAddress, uint16_t address, uint8_t
 }
 
 void AIDA_READ_REGISTER(uint8_t dspAddress, uint16_t address, uint8_t length, uint8_t *data)
-{
-  uint8_t index = 0;
-  byte LSByte = 0x00;
-  byte MSByte = 0x00;
-
-  #ifdef __AVR__
-  WIRE.beginTransmission(dspAddress);  // Begin write
-
-  // Send the internal address I want to read
-  LSByte = (byte)address & 0xFF;
-  MSByte = address >> 8;
-  WIRE.write(MSByte);             // Sends High Address
-  WIRE.write(LSByte);             // Sends Low Address
-
-  WIRE.endTransmission(false);    // Write out data to I2C but don't send stop condition on I2C bus
-
-  WIRE.requestFrom(dspAddress, length);    // request n bytes from slave device
-  #else
-  WIRE.requestFromReg16(dspAddress, address, length, true); // Arduino 2 doesn't support restart natively O.o
-  #endif
+{  
+  WIRE.requestFrom(dspAddress, address, length, 2, true); // Repeated start to read internal address of device
 
   while(WIRE.available())         // slave may send less than requested
   {
