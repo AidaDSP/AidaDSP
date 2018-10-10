@@ -1404,6 +1404,8 @@ void AIDA_WRITE_REGISTER(uint8_t dspAddress, uint16_t address, uint8_t length, u
 
 void AIDA_WRITE_REGISTER_BLOCK(uint8_t dspAddress, uint16_t address, uint16_t length, const uint8_t *data)
 {
+  byte LSByte = 0x00;
+  byte MSByte = 0x00;
   uint16_t res = 0;
   uint16_t i,j;
   uint8_t nbytes = 0;
@@ -1613,8 +1615,26 @@ void AIDA_SW_SAFELOAD_WRITE_VALUES(uint8_t dspAddress, uint16_t address, uint8_t
 }
 
 void AIDA_READ_REGISTER(uint8_t dspAddress, uint16_t address, uint8_t length, uint8_t *data)
-{  
-  WIRE.requestFrom(dspAddress, address, length, 2, true); // Repeated start to read internal address of device
+{
+  uint8_t index = 0;
+  byte LSByte = 0x00;
+  byte MSByte = 0x00;
+  
+  #ifdef CORE_TEENSY
+    WIRE.beginTransmission(dspAddress);  // Begin write
+
+    // Send the internal address I want to read
+    LSByte = (byte)address & 0xFF;
+    MSByte = address >> 8;
+    WIRE.write(MSByte);             // Sends High Address
+    WIRE.write(LSByte);             // Sends Low Address
+
+    WIRE.endTransmission(false);    // Write out data to I2C but don't send stop condition on I2C bus
+
+    WIRE.requestFrom(dspAddress, length);    // request n bytes from slave device  
+  #else
+    WIRE.requestFrom(dspAddress, address, length, 2, true); // Repeated start to read internal address of device
+  #endif
 
   while(WIRE.available())         // slave may send less than requested
   {
