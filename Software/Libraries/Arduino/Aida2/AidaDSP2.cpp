@@ -31,7 +31,7 @@
 
 #ifdef __AVR__
   #define WIRE Wire
-#elseif CORE_TEENSY
+#elsif CORE_TEENSY
   #warning CORE_TEENSY in use
   #define WIRE Wire
 #else
