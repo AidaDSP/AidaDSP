@@ -123,9 +123,10 @@ void setup()
    
   // open the USBSerial port
   Serial.begin(115200);
-  clearAndHome();
+  //clearAndHome();
   Serial.println(F("Aida DSP control with ARDUINO")); // Welcome message
-  Serial.println(F("0x00"));    // Print DSP I2C address
+  Serial.print(F("0x"));
+  Serial.println((DEVICE_ADDR_7bit<<1)&~0x01, HEX);
 
   InitAida(); // Initialize DSP board
   digitalWrite(RESET, HIGH); // Wake up DSP
