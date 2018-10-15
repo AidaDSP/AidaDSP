@@ -31,7 +31,7 @@
 
 #ifdef __AVR__
   #define WIRE Wire
-#elsif CORE_TEENSY
+#elif CORE_TEENSY
   #warning CORE_TEENSY in use
   #define WIRE Wire
 #else
@@ -393,8 +393,8 @@ void InitAida(void)
   digitalWrite(RESET, LOW);  // Hold DSP in RESET state (halted)
 
   WIRE.begin(); // join i2c bus (address optional for master)
-  WIRE.setClock(400000UL); // use i2c peripheral module in fast-mode (400kHz i2c clk)
-  //WIRE.setClock(100000UL); // use i2c peripheral module in default-mode (100kHz i2c clk)
+  //WIRE.setClock(400000UL); // use i2c peripheral module in fast-mode (400kHz i2c clk)
+  WIRE.setClock(100000UL); // use i2c peripheral module in default-mode (100kHz i2c clk)
   delay(10);
 }
 
@@ -1404,43 +1404,40 @@ void AIDA_WRITE_REGISTER(uint8_t dspAddress, uint16_t address, uint8_t length, u
 
 void AIDA_WRITE_REGISTER_BLOCK(uint8_t dspAddress, uint16_t address, uint16_t length, const uint8_t *data)
 {
-  byte LSByte = 0x00;
-  byte MSByte = 0x00;
-  uint16_t res = 0;
+  uint8_t buf[24];
   uint16_t i,j;
-  uint8_t nbytes = 0;
-
-  WIRE.beginTransmission(dspAddress);  // Begin write
-  LSByte = (byte)address & 0xFF;
-  MSByte = address >> 8;
-  WIRE.write(MSByte);             // Sends High Address
-  WIRE.write(LSByte);             // Sends Low Address
+  uint16_t nbytes = 0;
 
   #ifdef ADAU170x
+    // See Table 31, page 32 of Datasheet
     if(address == 1024) // ProgramDataAddr, 5 bytes per transfer
       nbytes = 5;
-    else // Everything else is 4 bytes addressed
+    else if(address == 0) // regParamAddr, 4 bytes per transfer
       nbytes = 4;
+    else // HWConFigurationAddr is a problem 2076(dec) to 2087(dec) with different addressing sizes, write the entire block
+      nbytes = length;
   #else // ADAU144x
+    // See Table 82, page 82 of Datasheet
     if(address == 8192) // ProgramDataAddr, 6 bytes per transfer
       nbytes = 6;
-    else if(address == 57344 || address == 57408)
+    else if(address > 57343 && address < 57985)
       nbytes = 2;
     else
       nbytes = 4;
   #endif
-  
+
   // Write data through I2C
   for(i=0;i<length;i+=nbytes)
   {
-    for(j=0;i<nbytes;j++)
+    for(j=0;j<nbytes;j++)
     {
-      WIRE.write((byte)data[i+j]); // sends bytes
+      #ifdef __AVR__
+        buf[j] = pgm_read_byte_near(&data[i+j]); // Use macro to access program space memory
+      #else
+        buf[j] = data[i+j];
+      #endif
     }
-    if((i+nbytes) == length) // last?
-      WIRE.endTransmission(true); // stop transmitting
-    else
-      WIRE.endTransmission(false); // repeated start (WARNING!!! not supported in ArduinoCore-sam or Arduino 2)
+    AIDA_WRITE_REGISTER(dspAddress, address++, nbytes, buf);
   }
 }
 
@@ -1633,7 +1630,7 @@ void AIDA_READ_REGISTER(uint8_t dspAddress, uint16_t address, uint8_t length, ui
 
     WIRE.requestFrom(dspAddress, length);    // request n bytes from slave device  
   #else
-    WIRE.requestFrom(dspAddress, address, length, 2, true); // Repeated start to read internal address of device
+    WIRE.requestFrom(dspAddress, length, address, 2, true); // Repeated start to read internal address of device
   #endif
 
   while(WIRE.available())         // slave may send less than requested
