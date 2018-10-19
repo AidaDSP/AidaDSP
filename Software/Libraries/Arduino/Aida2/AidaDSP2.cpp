@@ -29,10 +29,7 @@
   #endif
 #endif
 
-#ifdef __AVR__
-  #define WIRE Wire
-#elif CORE_TEENSY
-  #warning CORE_TEENSY in use
+#if defined(__AVR__) || defined(CORE_TEENSY)
   #define WIRE Wire
 #else
   #define WIRE Wire1 // Arduino2
