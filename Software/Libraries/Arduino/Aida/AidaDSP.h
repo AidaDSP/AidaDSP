@@ -87,8 +87,8 @@ inline int32_t FIXED_Mul(int32_t a, int32_t b)  // This function has to be decla
  *          DSP DEFINES (do not edit)           *
  ************************************************/
 #define pi 3.1415926f
-#define FS 48000.00f
-#define SR (uint32_t)(1.0f/FS)
+#define FS 48000.0f
+#define SP (uint32_t)(1000000.0f/FS)
 
 // 2nd order equalizer defines
 #define Peaking         0
