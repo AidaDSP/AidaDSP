@@ -45,4 +45,4 @@ Basically you can manage your UI (user interface: buttons, faders, etc.) with Ar
 
 - [Aida DSP's website](https://aidadsp.github.io/aida_dsp_arduino_shield.html)
 
-_**Aida DSP Team 2020**_
+[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate/?hosted_button_id=UZWHH6HKJTHFJ)
